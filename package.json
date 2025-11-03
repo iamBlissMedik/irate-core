@@ -8,21 +8,25 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/core/server.js",
     "migrate": "prisma migrate dev",
-    "seed": "ts-node prisma/seed.ts"
+    "deploy:migrate": "prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.18.0",
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-async-handler": "^1.2.0",
+    "jsonwebtoken": "^9.0.2",
     "redis": "^5.9.0",
     "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.9.1",
     "nodemon": "^3.1.10",
     "prisma": "^6.18.0",
