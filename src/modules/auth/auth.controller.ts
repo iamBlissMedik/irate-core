@@ -18,17 +18,29 @@ export class AuthController {
 
   login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
-    const result = await authService.login(email, password);
+    const { accessToken, refreshToken, user } = await authService.login(
+      email,
+      password
+    );
+    // ✅ Store refresh token in HttpOnly cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
+    // ✅ Send access token in JSON (frontend stores in memory, not localStorage)
     res.json({
       success: true,
       message: "Login successful",
-      ...result,
+      accessToken,
+      user,
     });
   };
 
   refresh = async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
     const result = await authService.refresh(refreshToken);
 
     res.json({
@@ -39,22 +51,15 @@ export class AuthController {
   };
 
   logout = async (req: Request, res: Response) => {
-    // ✅ Get userId from authenticated request
     const userId = req.user?.id;
-
-    // ✅ Extract access token for blacklisting
     const authHeader = req.headers.authorization;
-    const accessToken = authHeader?.startsWith("Bearer ")
-      ? authHeader.split(" ")[1]
-      : undefined;
-    if (!userId) {
-      throw new AppError("No user id");
-    }
-    const result = await authService.logout(userId, accessToken);
+    const accessToken = authHeader?.replace("Bearer ", "");
 
-    res.json({
-      success: true,
-      ...result,
-    });
+    await authService.logout(userId!, accessToken);
+
+    // ✅ Remove refresh token cookie
+    res.clearCookie("refreshToken");
+
+    res.json({ success: true, message: "Logged out successfully" });
   };
 }

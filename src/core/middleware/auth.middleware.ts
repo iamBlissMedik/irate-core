@@ -12,30 +12,38 @@ export const authenticate = async (
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
-      throw new AuthError("Authorization token missing or malformed");
+      throw new AuthError("No access token provided");
     }
 
     const token = authHeader.split(" ")[1];
-    if (!config.JWT_SECRET) throw new AuthError("JWT secret not configured");
 
-    // 🚫 Check blacklist first (faster fail)
-    const blacklisted = await redis.get(`blacklist:${token}`);
-    if (blacklisted) throw new AuthError("Token has been revoked");
+    if (!config.JWT_SECRET) {
+      throw new AuthError("Server misconfiguration: missing JWT secret");
+    }
 
+    // 🚫 Check blacklist first
+    const isBlacklisted = await redis.get(`blacklist:${token}`);
+    if (isBlacklisted) {
+      throw new AuthError("Access token revoked. Please log in again.");
+    }
+
+    // ✅ Validate token
     const decoded = jwt.verify(token, config.JWT_SECRET) as {
       id: string;
       email: string;
     };
 
+    // ✅ Attach user info
     req.user = decoded;
-    next();
+
+    return next();
   } catch (err: any) {
+    if (err instanceof AuthError) return next(err);
+
     if (err.name === "TokenExpiredError") {
-      next(new AuthError("Token expired"));
-    } else if (err.name === "JsonWebTokenError") {
-      next(new AuthError("Invalid token"));
-    } else {
-      next(new AuthError("Unauthorized"));
+      return next(new AuthError("ACCESS_TOKEN_EXPIRED"));
     }
+
+    return next(new AuthError("INVALID_ACCESS_TOKEN"));
   }
 };

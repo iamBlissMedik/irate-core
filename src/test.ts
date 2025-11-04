@@ -1,4 +1,9 @@
-import { Request } from "express";
+import express from "express";
 
-const req = {} as Request;
-console.log(req.user?.id);
+const app = express();
+
+app.get("/", (_req, res) => {
+  res.send("ok");
+});
+
+app.listen(3000, () => console.log("Server running on 5000"));
