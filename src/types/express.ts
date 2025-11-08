@@ -3,7 +3,7 @@ import "express-serve-static-core"; // import the core types to augment
 
 declare module "express-serve-static-core" {
   interface Request {
-    user?: { id: string; email: string } & JwtPayload;
+    user: { id: string; email: string } & JwtPayload;
   }
 }
 
