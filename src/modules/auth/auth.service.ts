@@ -29,7 +29,7 @@ export class AuthService {
 
     const key = `login:fail:${email}`;
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw new AuthError("Invalid credentials");
+    if (!user) throw new AuthError("Email not found");
 
     // 🔒 Brute-force protection
     const attempts = await redis.incr(key);
@@ -38,7 +38,7 @@ export class AuthService {
       throw new AuthError("Too many failed attempts. Try again later.");
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) throw new AuthError("Invalid credentials");
+    if (!valid) throw new AuthError("Invalid password");
 
     await redis.del(key); // reset failed attempts
 
