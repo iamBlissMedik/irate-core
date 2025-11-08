@@ -7,24 +7,27 @@ import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import { globalErrorHandler } from "./errors/errorHandler";
 import { authRouter } from "@modules/auth/auth.routes";
+import { walletRouter } from "@modules/wallet/wallet.routes";
 import { redis } from "./config/redis";
 import { corsMiddleware } from "./config/cors";
 import cookieParser from "cookie-parser";
+import { adminWalletRouter } from "@modules/admin/admin.routes";
 
 export const createApp = async () => {
   const app = express();
 
+  // 🔐 Core security middleware first
   app.use(corsMiddleware);
   app.use(express.json());
-    app.use(cookieParser());
+  app.use(cookieParser());
 
+  // ⚡ Rate limiting middleware
   const limiter = rateLimit({
     store: new RedisStore({
-      // ✅ Works with ioredis and is fully type-safe
       sendCommand: async (...args: [string, ...string[]]) =>
         redis.call(...args) as unknown as Promise<any>,
     }),
-    windowMs: 60 * 1000, // 1 minute
+    windowMs: 60 * 1000,
     max: 30,
     standardHeaders: true,
     legacyHeaders: false,
@@ -32,11 +35,17 @@ export const createApp = async () => {
   });
   app.use(limiter);
 
-  app.get("/", async (req, res) => {
-    res.send("welcome to the core");
-  });
-  app.use("/api/auth", authRouter);
+  // 🫀 Health endpoint
+  app.get("/health", (_req, res) =>
+    res.status(200).json({ status: "ok", timestamp: new Date() })
+  );
 
+  // 🔗 Application modules
+  app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/wallets", walletRouter);
+  app.use("/api/v1/admin", adminWalletRouter);
+
+  // 🛑 Global Error Handler (must be last)
   app.use(globalErrorHandler);
 
   return app;
