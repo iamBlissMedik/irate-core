@@ -36,6 +36,10 @@ export const createApp = async () => {
   app.use(limiter);
 
   // 🫀 Health endpoint
+  app.get("/", (_req, res) =>
+    res.status(200).json({ msg: "Welcome to iRate Core" })
+  );
+  // 🫀 Health endpoint
   app.get("/health", (_req, res) =>
     res.status(200).json({ status: "ok", timestamp: new Date() })
   );
