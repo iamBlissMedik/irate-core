@@ -16,7 +16,7 @@ router.post(
   validate(transferSchema),
   walletController.transfer
 );
-router.post(
+router.get(
   "/:walletId/transactions",
   authenticate,
   walletController.listTransactions
