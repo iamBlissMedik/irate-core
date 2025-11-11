@@ -12,6 +12,8 @@ import { redis } from "./config/redis";
 import { corsMiddleware } from "./config/cors";
 import cookieParser from "cookie-parser";
 import { adminWalletRouter } from "@modules/admin/admin.routes";
+import { kycRouter } from "@modules/kyc/kyc.routes";
+import { userRouter } from "@modules/user/user.route";
 
 export const createApp = async () => {
   const app = express();
@@ -46,7 +48,9 @@ export const createApp = async () => {
 
   // 🔗 Application modules
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/users", userRouter);
   app.use("/api/v1/wallets", walletRouter);
+  app.use("/api/v1/kyc", kycRouter);
   app.use("/api/v1/admin", adminWalletRouter);
 
   // 🛑 Global Error Handler (must be last)

@@ -13,18 +13,36 @@ model User {
   email     String   @unique
   password  String
   role      UserRole @default(USER)
-  wallets   Wallet[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  kyc       KYC?
+  wallets   Wallet[]
+}
+
+model KYC {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  fullName    String
+  dateOfBirth DateTime
+  address     String
+  idType      String
+  idNumber    String
+  documentUrl String?
+  status      KYCStatus @default(PENDING)
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
 }
 
 model Wallet {
   id          String        @id @default(cuid())
   userId      String
   balance     Float         @default(0)
-  user        User          @relation(fields: [userId], references: [id])
   createdAt   DateTime      @default(now())
+  Ledger      Ledger[]
   Transaction Transaction[]
+  user        User          @relation(fields: [userId], references: [id])
 }
 
 model Transaction {
@@ -32,8 +50,21 @@ model Transaction {
   walletId  String
   type      TransactionType
   amount    Float
-  wallet    Wallet          @relation(fields: [walletId], references: [id])
   createdAt DateTime        @default(now())
+  wallet    Wallet          @relation(fields: [walletId], references: [id])
+}
+
+model Ledger {
+  id            String     @id @default(cuid())
+  walletId      String
+  referenceId   String?
+  description   String
+  amount        Float
+  balanceBefore Float
+  balanceAfter  Float
+  type          LedgerType
+  createdAt     DateTime   @default(now())
+  wallet        Wallet     @relation(fields: [walletId], references: [id])
 }
 
 enum UserRole {
@@ -44,4 +75,17 @@ enum UserRole {
 enum TransactionType {
   CREDIT
   DEBIT
+}
+
+enum LedgerType {
+  CREDIT
+  DEBIT
+  FEE
+  ADJUSTMENT
+}
+
+enum KYCStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }

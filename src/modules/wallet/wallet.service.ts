@@ -113,6 +113,8 @@ export class WalletService {
       if (from.balance < amount)
         throw new AppError("Insufficient balance.", 400);
 
+      const balanceBeforeFrom = from.balance;
+      const balanceBeforeTo = to.balance;
       // Update balances
       const updatedFrom = await tx.wallet.update({
         where: { id: fromWalletId },
@@ -124,13 +126,38 @@ export class WalletService {
         data: { balance: { increment: amount } },
       });
 
-      // Ledger
-      await tx.transaction.create({
+      // Create transaction entries
+      const debitTx = await tx.transaction.create({
         data: { walletId: fromWalletId, type: "DEBIT", amount },
       });
 
-      await tx.transaction.create({
+      const creditTx = await tx.transaction.create({
         data: { walletId: toWalletId, type: "CREDIT", amount },
+      });
+
+      // Create ledger entries
+      await tx.ledger.create({
+        data: {
+          walletId: fromWalletId,
+          referenceId: debitTx.id,
+          description: `Transfer to wallet ${toWalletId}`,
+          amount,
+          balanceBefore: balanceBeforeFrom,
+          balanceAfter: balanceBeforeFrom - amount,
+          type: "DEBIT",
+        },
+      });
+
+      await tx.ledger.create({
+        data: {
+          walletId: toWalletId,
+          referenceId: creditTx.id,
+          description: `Transfer from wallet ${fromWalletId}`,
+          amount,
+          balanceBefore: balanceBeforeTo,
+          balanceAfter: balanceBeforeTo + amount,
+          type: "CREDIT",
+        },
       });
 
       // Cache wallet balances
@@ -191,12 +218,14 @@ export class WalletService {
     };
   }
 
-  async creditWallet(walletId: string, amount: number) {
+  async creditWallet(walletId: string, amount: number, reason: string) {
     if (amount <= 0) throw new AppError("Amount must be positive");
 
     return prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({ where: { id: walletId } });
       if (!wallet) throw new AppError("Wallet not found", 404);
+
+      const balanceBefore = wallet.balance;
 
       // Update balance
       const updatedWallet = await tx.wallet.update({
@@ -204,9 +233,20 @@ export class WalletService {
         data: { balance: { increment: amount } },
       });
 
-      // Ledger
-      await tx.transaction.create({
+      const transaction = await tx.transaction.create({
         data: { walletId, type: "CREDIT", amount },
+      });
+
+      await tx.ledger.create({
+        data: {
+          walletId,
+          referenceId: transaction.id,
+          description: reason, // <--- store reason here
+          amount,
+          balanceBefore,
+          balanceAfter: balanceBefore + amount,
+          type: "CREDIT",
+        },
       });
 
       // Update cache

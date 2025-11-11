@@ -31,6 +31,7 @@ export const authenticate = async (
     const decoded = jwt.verify(token, config.JWT_SECRET) as {
       id: string;
       email: string;
+      role: "ADMIN" | "USER";
     };
 
     // ✅ Attach user info

@@ -18,7 +18,7 @@ export class AuthService {
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { email, password: hashed },
-    },);
+    });
 
     return { id: user.id, email: user.email };
   }
@@ -46,13 +46,13 @@ export class AuthService {
       throw new AppError("JWT secrets not configured", 500);
 
     const accessToken = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.id, email: user.email, role: user.role },
       config.JWT_SECRET,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.id, email: user.email, role: user.role },
       config.JWT_REFRESH_SECRET,
       { expiresIn: "7d" }
     );
@@ -63,7 +63,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      user: { id: user.id, email: user.email },
+      user: { id: user.id, email: user.email, role: user.role },
     };
   }
 
@@ -79,12 +79,12 @@ export class AuthService {
       const storedToken = await redis.get(`refresh:${decoded.id}`);
       if (!storedToken || storedToken !== refreshToken)
         throw new AuthError("Invalid or expired refresh token");
-
       const newAccessToken = jwt.sign(
-        { id: decoded.id, email: decoded.email },
+        { id: decoded.id, email: decoded.email, role: decoded.role },
         config.JWT_SECRET,
         { expiresIn: "15m" }
       );
+
 
       return { accessToken: newAccessToken };
     } catch {

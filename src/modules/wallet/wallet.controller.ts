@@ -1,4 +1,3 @@
-// src/modules/wallet/wallet.controller.ts
 import { Request, Response } from "express";
 import { WalletService } from "./wallet.service";
 
@@ -55,7 +54,7 @@ export class WalletController {
       fromWalletId,
       toWalletId,
       Number(amount),
-        userId,
+      userId,
       idempotencyKey
     );
 
@@ -83,6 +82,19 @@ export class WalletController {
       success: true,
       message: "Transaction history retrieved",
       data: result,
+    });
+  }
+
+  //  ✅Admin: Credit Wallet
+  async credit(req: Request, res: Response) {
+    const { walletId } = req.params;
+    const { amount, reason } = req.body;
+
+    const result = await walletService.creditWallet(walletId, amount, reason);
+
+    return res.status(200).json({
+      message: "Wallet credited successfully",
+      wallet: result,
     });
   }
 }

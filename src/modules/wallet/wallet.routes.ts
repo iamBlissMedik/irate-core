@@ -8,18 +8,19 @@ const router = Router();
 const walletController = new WalletController();
 
 router.post("/", authenticate, walletController.create);
-router.get("/", authenticate, walletController.listMyWallets);
-router.get("/:walletId/balance", authenticate, walletController.getBalance);
 router.post(
   "/transfer",
   authenticate,
   validate(transferSchema),
   walletController.transfer
 );
+router.get("/", authenticate, walletController.listMyWallets);
+router.get("/:walletId/balance", authenticate, walletController.getBalance);
 router.get(
   "/:walletId/transactions",
   authenticate,
   walletController.listTransactions
 );
+
 
 export const walletRouter = router;
