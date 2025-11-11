@@ -1,4 +1,3 @@
-// src/types/express/index.d.ts
 import { JwtPayload } from "jsonwebtoken";
 import "express-serve-static-core";
 
