@@ -29,7 +29,7 @@ export class AuthService {
 
     const key = `login:fail:${email}`;
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw new AuthError("Email not found");
+    if (!user) throw new AppError("Email not found", 404);
 
     // 🔒 Brute-force protection
     const attempts = await redis.incr(key);
@@ -84,7 +84,6 @@ export class AuthService {
         config.JWT_SECRET,
         { expiresIn: "15m" }
       );
-
 
       return { accessToken: newAccessToken };
     } catch {
