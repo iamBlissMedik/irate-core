@@ -2,6 +2,7 @@ import cors from "cors";
 
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:9000",
   "http://127.0.0.1:3000",
   // Add more domains here
   "https://yourfrontenddomain.com",
