@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "./AppError";
+import logger from "@core/utils/logger";
 
 export const globalErrorHandler = (
   err: Error | AppError,
@@ -14,7 +15,7 @@ export const globalErrorHandler = (
     err instanceof AppError
       ? err.message
       : "Internal server error. Please try again.";
-
+  logger.error(`${err.message} - ${_req.method} ${_req.originalUrl}`);
   res.status(statusCode).json({
     success: false,
     message,

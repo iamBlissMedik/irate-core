@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { WalletService } from "./wallet.service";
+import { auditLog } from "@core/utils/auditLogger";
 
 const walletService = new WalletService();
 
@@ -57,7 +58,7 @@ export class WalletController {
       userId,
       idempotencyKey
     );
-
+    await auditLog("WALLET_TRANSFER", userId, { amount });
     return res.json({
       success: true,
       message: "Transfer successful",

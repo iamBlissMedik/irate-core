@@ -42,3 +42,8 @@ export type Transaction = Prisma.TransactionModel
  * 
  */
 export type Ledger = Prisma.LedgerModel
+/**
+ * Model AuditLog
+ * 
+ */
+export type AuditLog = Prisma.AuditLogModel

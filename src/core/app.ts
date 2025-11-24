@@ -14,6 +14,7 @@ import cookieParser from "cookie-parser";
 import { adminWalletRouter } from "@modules/admin/admin.routes";
 import { kycRouter } from "@modules/kyc/kyc.routes";
 import { userRouter } from "@modules/user/user.route";
+import requestLogger from "./middleware/requestLogger";
 
 export const createApp = async () => {
   const app = express();
@@ -53,6 +54,8 @@ export const createApp = async () => {
   app.use("/api/v1/kyc", kycRouter);
   app.use("/api/v1/admin", adminWalletRouter);
 
+  // logging http requests
+  app.use(requestLogger);
   // 🛑 Global Error Handler (must be last)
   app.use(globalErrorHandler);
 

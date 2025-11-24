@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -88,4 +87,12 @@ enum KYCStatus {
   PENDING
   VERIFIED
   REJECTED
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
 }
