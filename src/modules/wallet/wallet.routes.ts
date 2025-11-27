@@ -1,26 +1,18 @@
 import { Router } from "express";
 import { WalletController } from "./wallet.controller";
 import { authenticate } from "@core/middleware/auth.middleware";
-import { validate } from "@core/middleware/validate";
-import { transferSchema } from "./wallet.schema";
+import asyncHandler from "express-async-handler";
 
 const router = Router();
 const walletController = new WalletController();
 
 router.post("/", authenticate, walletController.create);
-router.post(
-  "/transfer",
-  authenticate,
-  validate(transferSchema),
-  walletController.transfer
-);
-router.get("/", authenticate, walletController.listMyWallets);
-router.get("/:walletId/balance", authenticate, walletController.getBalance);
-router.get(
-  "/:walletId/transactions",
-  authenticate,
-  walletController.listTransactions
-);
 
+router.get("/", authenticate, asyncHandler(walletController.listMyWallets));
+router.get(
+  "/:walletId/balance",
+  authenticate,
+  asyncHandler(walletController.getBalance)
+);
 
 export const walletRouter = router;

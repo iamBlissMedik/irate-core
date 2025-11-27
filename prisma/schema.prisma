@@ -66,6 +66,14 @@ model Ledger {
   wallet        Wallet     @relation(fields: [walletId], references: [id])
 }
 
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
 enum UserRole {
   ADMIN
   USER
@@ -87,12 +95,4 @@ enum KYCStatus {
   PENDING
   VERIFIED
   REJECTED
-}
-
-model AuditLog {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  action    String
-  metadata  Json?
-  createdAt DateTime @default(now())
 }

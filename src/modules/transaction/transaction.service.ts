@@ -3,77 +3,7 @@ import { redis } from "@core/config/redis";
 import { AppError } from "@core/errors/AppError";
 import dayjs from "dayjs";
 
-export class WalletService {
-  async createWallet(userId: string) {
-    const existingWallet = await prisma.wallet.findFirst({ where: { userId } });
-
-    if (existingWallet) {
-      throw new AppError("Wallet already exists for this user", 400);
-    }
-
-    return prisma.wallet.create({
-      data: { userId, balance: 0 },
-    });
-  }
-
-  async getMyWallets(userId: string, page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
-
-    const [wallets, total] = await Promise.all([
-      prisma.wallet.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.wallet.count({ where: { userId } }),
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      wallets,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-    };
-  }
-
-  async deleteWallet(walletId: string, userId: string) {
-    const result = await prisma.wallet.deleteMany({
-      where: { id: walletId, userId },
-    });
-
-    if (result.count === 0)
-      throw new AppError("Wallet not found or unauthorized", 404);
-
-    await redis.del(`wallet:${walletId}:balance`);
-
-    return { message: "Wallet deleted" };
-  }
-
-  async getBalance(walletId: string, userId: string) {
-    const cacheKey = `wallet:${walletId}:balance`;
-    const cached = await redis.get(cacheKey);
-
-    if (cached !== null) return Number(cached);
-
-    const wallet = await prisma.wallet.findUnique({ where: { id: walletId } });
-    if (!wallet) throw new AppError("Wallet not found", 404);
-
-    if (wallet.userId !== userId) {
-      throw new AppError("Unauthorized wallet access", 403);
-    }
-
-    await redis.set(cacheKey, wallet.balance.toString());
-    return wallet.balance;
-  }
-
+export class TransactionService {
   async transfer(
     fromWalletId: string,
     toWalletId: string,
@@ -259,68 +189,44 @@ export class WalletService {
       return updatedWallet;
     });
   }
-
-  async getAllWalletsBalance() {
+  // System-wide transaction stats for dashboard
+  async getAllTransactionsStats() {
     const now = new Date();
 
-    // Define today (start of today)
-    const todayStart = dayjs(now).startOf("day").toDate();
-    const todayEnd = dayjs(now).endOf("day").toDate();
+    // Today (last 24h)
+    const todayStart = dayjs(now).subtract(24, "hour").toDate();
+    const todayEnd = now;
 
-    // Define yesterday
-    const yesterdayStart = dayjs(now)
-      .subtract(1, "day")
-      .startOf("day")
-      .toDate();
-    const yesterdayEnd = dayjs(now).subtract(1, "day").endOf("day").toDate();
+    // Previous 24h (day before)
+    const yesterdayStart = dayjs(now).subtract(48, "hour").toDate();
+    const yesterdayEnd = dayjs(now).subtract(24, "hour").toDate();
 
-    // Total wallet balance
-    const totalBalance = await prisma.wallet.aggregate({
-      _sum: { balance: true },
+    // Total transactions in system
+    const totalTransactions = await prisma.transaction.count();
+
+    // Transactions in last 24h
+    const todayTransactions = await prisma.transaction.count({
+      where: { createdAt: { gte: todayStart, lte: todayEnd } },
     });
 
-    // Total wallets
-    const walletCount = await prisma.wallet.count();
-
-    // Total deposits today
-    const todayDeposits = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: {
-        type: "CREDIT",
-        createdAt: { gte: todayStart, lte: todayEnd },
-      },
+    // Transactions in previous 24h
+    const yesterdayTransactions = await prisma.transaction.count({
+      where: { createdAt: { gte: yesterdayStart, lte: yesterdayEnd } },
     });
 
-    // Total deposits yesterday
-    const yesterdayDeposits = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: {
-        type: "CREDIT",
-        createdAt: { gte: yesterdayStart, lte: yesterdayEnd },
-      },
-    });
-
-    // Trend calculation
-    const currentValue = todayDeposits._sum.amount || 0;
-    const previousValue = yesterdayDeposits._sum.amount || 0;
-
+    // Calculate trend (percentage change)
     const trend =
-      previousValue === 0
+      yesterdayTransactions === 0
         ? 0
-        : ((currentValue - previousValue) / previousValue) * 100;
+        : ((todayTransactions - yesterdayTransactions) /
+            yesterdayTransactions) *
+          100;
 
-    const trendType =
-      currentValue > previousValue
-        ? "up"
-        : currentValue < previousValue
-        ? "down"
-        : "neutral";
+    const trendType = trend > 0 ? "up" : trend < 0 ? "down" : "neutral";
 
     return {
-      title: "Total Wallet Balance",
-      value: totalBalance._sum.balance || 0,
-      currency: "NGN",
-      wallets: walletCount,
+      title: "Total Transactions",
+      value: totalTransactions,
       trend: Number(trend.toFixed(1)),
       trendType,
     };

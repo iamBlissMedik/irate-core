@@ -1,20 +1,16 @@
 /// <reference path="../types/express/index.d.ts" />
-
 import "tsconfig-paths/register";
 import express from "express";
 import "dotenv/config";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
-import { globalErrorHandler } from "./errors/errorHandler";
-import { authRouter } from "@modules/auth/auth.routes";
-import { walletRouter } from "@modules/wallet/wallet.routes";
+import { globalErrorHandler } from "./utils/errorHandler";
 import { redis } from "./config/redis";
 import { corsMiddleware } from "./config/cors";
 import cookieParser from "cookie-parser";
-import { adminWalletRouter } from "@modules/admin/admin.routes";
-import { kycRouter } from "@modules/kyc/kyc.routes";
-import { userRouter } from "@modules/user/user.route";
 import requestLogger from "./middleware/requestLogger";
+import { notFoundHandler } from "./utils/notFoundHandler";
+import { v1Router } from "routes/v1/v1.routes";
 
 export const createApp = async () => {
   const app = express();
@@ -48,14 +44,12 @@ export const createApp = async () => {
   );
 
   // 🔗 Application modules
-  app.use("/api/v1/auth", authRouter);
-  app.use("/api/v1/users", userRouter);
-  app.use("/api/v1/wallets", walletRouter);
-  app.use("/api/v1/kyc", kycRouter);
-  app.use("/api/v1/admin", adminWalletRouter);
+  app.use("/api/v1", v1Router);
 
   // logging http requests
   app.use(requestLogger);
+  // 404 Route Handler
+  app.use(notFoundHandler);
   // 🛑 Global Error Handler (must be last)
   app.use(globalErrorHandler);
 

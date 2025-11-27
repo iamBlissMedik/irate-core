@@ -1,4 +1,5 @@
 import { prisma } from "@core/config/prisma";
+import dayjs from "dayjs";
 import { UserWhereInput } from "generated/client/models";
 
 export class UserService {
@@ -116,5 +117,58 @@ export class UserService {
     }
 
     return user;
+  }
+
+  // Total Users + 24h Trend
+  async getAllUsersStats() {
+    const now = new Date();
+
+    // Today
+    const todayStart = dayjs(now).startOf("day").toDate();
+    const todayEnd = dayjs(now).endOf("day").toDate();
+
+    // Yesterday
+    const yesterdayStart = dayjs(now)
+      .subtract(1, "day")
+      .startOf("day")
+      .toDate();
+    const yesterdayEnd = dayjs(now).subtract(1, "day").endOf("day").toDate();
+
+    // Filter: exclude admins (use enum value)
+    const userFilter = { role: { not: "ADMIN" as const } };
+
+    // Total number of non-admin users
+    const totalUsers = await prisma.user.count({
+      where: userFilter,
+    });
+
+    // Users created today
+    const todayUsers = await prisma.user.count({
+      where: {
+        createdAt: { gte: todayStart, lte: todayEnd },
+      },
+    });
+
+    // Users created yesterday
+    const yesterdayUsers = await prisma.user.count({
+      where: {
+        createdAt: { gte: yesterdayStart, lte: yesterdayEnd },
+      },
+    });
+
+    // Trend calculation (percentage growth)
+    const trend =
+      yesterdayUsers === 0
+        ? todayUsers
+        : ((todayUsers - yesterdayUsers) / yesterdayUsers) * 100;
+
+    const trendType = trend > 0 ? "up" : trend < 0 ? "down" : "neutral";
+
+    return {
+      title: "Total Users",
+      value: totalUsers,
+      trend: Number(trend.toFixed(1)),
+      trendType,
+    };
   }
 }

@@ -27,4 +27,9 @@ export class UserController {
     );
     sendResponse(res, 200, true, "User fetched successfully", user);
   }
+
+  async getAllUsersStats(req: Request, res: Response) {
+   const stats = await userService.getAllUsersStats();
+    sendResponse(res, 200, true, "User stats fetched successfully", stats);
+  }
 }
