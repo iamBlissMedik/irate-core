@@ -29,4 +29,30 @@ export class AdminService {
       transactionVolume,
     };
   }
+  /**
+   * Get current admin user details
+   */
+  async getAdminMe(
+    adminId: string,
+    walletPage = 1,
+    walletLimit = 10,
+    txPage = 1,
+    txLimit = 5
+  ) {
+    // Reuse UserService.getUser to get wallets + transactions
+    const admin = await userService.getUser(
+      adminId,
+      walletPage,
+      walletLimit,
+      txPage,
+      txLimit
+    );
+
+    // Optionally, validate role
+    if (admin.role !== "ADMIN") {
+      throw new Error("Unauthorized: Not an admin");
+    }
+
+    return admin;
+  }
 }

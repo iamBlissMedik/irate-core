@@ -27,6 +27,12 @@ router.post(
 
 router.get("/kyc", authenticate, isAdmin, asyncHandler(kycController.listKycs));
 router.get(
+  "/me",
+  authenticate,
+  isAdmin,
+  asyncHandler(adminController.getAdminMe)
+);
+router.get(
   "/users",
   authenticate,
   isAdmin,
@@ -50,8 +56,6 @@ router.get(
   isAdmin,
   asyncHandler(adminController.getDashboardOverview)
 );
-
-
 
 router.patch(
   "/kyc/:kycId/review",

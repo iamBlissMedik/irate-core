@@ -75,7 +75,7 @@ export class UserService {
   /**
    * ✅ Get single user by ID with KYC + wallet info
    */
-  async getUserById(
+  async getUser(
     userId: string,
     walletPage = 1,
     walletLimit = 10,
