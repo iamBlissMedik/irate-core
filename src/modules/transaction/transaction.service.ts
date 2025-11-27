@@ -231,4 +231,80 @@ export class TransactionService {
       trendType,
     };
   }
+
+  //  System-wide Transaction Volume (Total money movement)
+  async getTransactionVolume() {
+    const now = new Date();
+
+    // Last 24 hours
+    const todayStart = dayjs(now).subtract(24, "hour").toDate();
+    const todayEnd = now;
+
+    // Previous 24 hours
+    const yesterdayStart = dayjs(now).subtract(48, "hour").toDate();
+    const yesterdayEnd = dayjs(now).subtract(24, "hour").toDate();
+
+    // Total volume moved in last 24 hours
+    const todayVolume = await prisma.transaction.aggregate({
+      _sum: { amount: true },
+      where: {
+        createdAt: { gte: todayStart, lte: todayEnd },
+      },
+    });
+
+    // Total volume moved in previous 24 hours
+    const yesterdayVolume = await prisma.transaction.aggregate({
+      _sum: { amount: true },
+      where: {
+        createdAt: { gte: yesterdayStart, lte: yesterdayEnd },
+      },
+    });
+
+    const todayValue = todayVolume._sum.amount || 0;
+    const yesterdayValue = yesterdayVolume._sum.amount || 0;
+
+    // % trend formula
+    const trend =
+      yesterdayValue === 0
+        ? 0
+        : ((todayValue - yesterdayValue) / yesterdayValue) * 100;
+
+    const trendType = trend > 0 ? "up" : trend < 0 ? "down" : "neutral";
+
+    return {
+      title: "Transaction Volume",
+      value: todayValue, // ₦ money moved
+      currency: "NGN",
+      trend: Number(trend.toFixed(1)),
+      trendType,
+    };
+  }
+
+  //  System-wide Cashflow (Total Credits - Total Debits)
+  async getTotalCashflow() {
+    const creditSum = await prisma.transaction.aggregate({
+      _sum: { amount: true },
+      where: { type: "CREDIT" },
+    });
+
+    const debitSum = await prisma.transaction.aggregate({
+      _sum: { amount: true },
+      where: { type: "DEBIT" },
+    });
+
+    const totalCredit = creditSum._sum.amount || 0;
+    const totalDebit = debitSum._sum.amount || 0;
+
+    const netCashflow = totalCredit - totalDebit; // Net system growth
+
+    return {
+      title: "Total Cashflow",
+      value: netCashflow, // Can be negative or positive
+      credit: totalCredit,
+      debit: totalDebit,
+      currency: "NGN",
+    };
+  }
+
+
 }

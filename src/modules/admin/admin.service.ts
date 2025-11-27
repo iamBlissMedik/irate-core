@@ -8,15 +8,25 @@ const transactionService = new TransactionService();
 export class AdminService {
   // DASHBOARD OVERVIEW
   async getDashboardOverview() {
-    const [usersStats, walletsBalance,transactionStats] = await Promise.all([
+    const [
+      usersStats,
+      walletsBalance,
+      transactionStats,
+      totalCashflow,
+      transactionVolume,
+    ] = await Promise.all([
       userService.getAllUsersStats(),
       walletService.getAllWalletsBalance(),
       transactionService.getAllTransactionsStats(),
+      transactionService.getTotalCashflow(),
+      transactionService.getTransactionVolume(),
     ]);
     return {
       usersStats,
       walletsBalance,
       transactionStats,
+      totalCashflow,
+      transactionVolume,
     };
   }
 }
