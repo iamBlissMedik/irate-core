@@ -7,6 +7,8 @@
 [![Prisma](https://img.shields.io/badge/Prisma-5.x-informational)](https://www.prisma.io/)
 [![Express](https://img.shields.io/badge/Express-5.x-lightgrey)](https://expressjs.com/)
 
+**📦 [Complete Postman Collection Available](./postman/)** - Ready-to-use API documentation for your team!
+
 ---
 
 ## 🎯 Overview
@@ -235,6 +237,15 @@ The API will be available at `http://localhost:4000`
 ---
 
 ## 📚 API Documentation
+
+### 🎯 Quick Start with Postman
+
+**Complete Postman collection available in [`./postman/`](./postman/) folder!**
+
+1. Import `iRate-API.postman_collection.json` into Postman
+2. Import `iRate-Local.postman_environment.json` for local testing
+3. All endpoints documented with examples and automatic token handling
+4. See [Postman README](./postman/README.md) for detailed usage guide
 
 ### Base URL
 
