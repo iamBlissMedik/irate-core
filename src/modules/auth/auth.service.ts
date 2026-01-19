@@ -10,10 +10,10 @@ import { IWalletRepository } from "@application/interfaces/repositories/IWalletR
 
 /**
  * Authentication Service
- * 
+ *
  * Handles user authentication use cases following Clean Architecture.
  * Depends on repository interfaces, not Prisma directly.
- * 
+ *
  * Benefits:
  * - Testable (inject mock repositories)
  * - Database-agnostic (swap Prisma for MongoDB without changing this file)
@@ -22,12 +22,12 @@ import { IWalletRepository } from "@application/interfaces/repositories/IWalletR
 export class AuthService {
   constructor(
     private userRepository: IUserRepository,
-    private walletRepository: IWalletRepository
+    private walletRepository: IWalletRepository,
   ) {}
 
   /**
    * Register new user
-   * 
+   *
    * @param email - User email
    * @param password - Plain text password (will be hashed)
    * @returns Created user data (without password)
@@ -52,7 +52,6 @@ export class AuthService {
     // Create wallet for user (separation of concerns)
     await this.walletRepository.create({
       userId: user.id,
-      currency: "NGN",
       balance: 0,
     });
 
@@ -61,7 +60,7 @@ export class AuthService {
 
   /**
    * Authenticate user
-   * 
+   *
    * @param email - User email
    * @param password - Plain text password
    * @returns Access token, refresh token, and user data
@@ -93,13 +92,13 @@ export class AuthService {
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.JWT_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
 
     const refreshToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.JWT_REFRESH_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     // 💾 Store refresh token in Redis
@@ -118,7 +117,7 @@ export class AuthService {
     try {
       const decoded = jwt.verify(
         refreshToken,
-        config.JWT_REFRESH_SECRET
+        config.JWT_REFRESH_SECRET,
       ) as any;
 
       const storedToken = await redis.get(`refresh:${decoded.id}`);
@@ -127,7 +126,7 @@ export class AuthService {
       const newAccessToken = jwt.sign(
         { id: decoded.id, email: decoded.email, role: decoded.role },
         config.JWT_SECRET,
-        { expiresIn: "15m" }
+        { expiresIn: "15m" },
       );
 
       return { accessToken: newAccessToken };

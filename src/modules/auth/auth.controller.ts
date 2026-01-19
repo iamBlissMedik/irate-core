@@ -4,10 +4,10 @@ import { getService } from "@infrastructure/di/serviceContainer";
 
 /**
  * Authentication Controller
- * 
+ *
  * Handles HTTP requests for authentication endpoints.
  * Uses dependency injection to get AuthService instance.
- * 
+ *
  * Following Single Responsibility Principle:
  * - Controller: HTTP handling, request/response formatting
  * - Service: Business logic
@@ -39,7 +39,7 @@ export class AuthController {
     const { email, password } = req.body;
     const { accessToken, refreshToken, user } = await authService.login(
       email,
-      password
+      password,
     );
     // ✅ Store refresh token in HttpOnly cookie
     res.cookie("refreshToken", refreshToken, {

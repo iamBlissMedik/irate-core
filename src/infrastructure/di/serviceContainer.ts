@@ -1,6 +1,6 @@
 /**
  * Service Container Configuration
- * 
+ *
  * Register all services, repositories, and utilities here.
  * This is the single source of truth for dependency injection.
  */
@@ -30,19 +30,19 @@ export function initializeContainer(): void {
   container.register(
     "IUserRepository",
     () => new PrismaUserRepository(),
-    "singleton"
+    "singleton",
   );
 
   container.register(
     "IWalletRepository",
     () => new PrismaWalletRepository(),
-    "singleton"
+    "singleton",
   );
 
   container.register(
     "ITransactionRepository",
     () => new PrismaTransactionRepository(),
-    "singleton"
+    "singleton",
   );
 
   // ============================================
@@ -50,31 +50,34 @@ export function initializeContainer(): void {
   // ============================================
   container.register(
     "AuthService",
-    () => new AuthService(
-      container.resolve("IUserRepository"),
-      container.resolve("IWalletRepository")
-    ),
-    "transient"
+    () =>
+      new AuthService(
+        container.resolve("IUserRepository"),
+        container.resolve("IWalletRepository"),
+      ),
+    "transient",
   );
 
   container.register(
     "WalletService",
-    () => new WalletService(
-      container.resolve("IWalletRepository")
-    ),
-    "transient"
+    () => new WalletService(container.resolve("IWalletRepository")),
+    "transient",
   );
 
   container.register(
     "TransactionService",
-    () => new TransactionService(
-      container.resolve("ITransactionRepository"),
-      container.resolve("IWalletRepository")
-    ),
-    "transient"
+    () =>
+      new TransactionService(
+        container.resolve("ITransactionRepository"),
+        container.resolve("IWalletRepository"),
+      ),
+    "transient",
   );
 
-  console.log("✅ DI Container initialized with services:", container.getRegisteredServices());
+  console.log(
+    "✅ DI Container initialized with services:",
+    container.getRegisteredServices(),
+  );
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * Base Repository Interface
- * 
+ *
  * Generic interface that all repositories should extend.
  * Provides common CRUD operations.
  */

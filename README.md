@@ -20,6 +20,7 @@ iRate Backend is a production-ready REST API for fintech operations in Nigeria, 
 ## ✨ Key Features
 
 ### Architecture & Design
+
 - ✅ **Clean Architecture** - Layered design with clear separation of concerns
 - ✅ **SOLID Principles** - Every principle demonstrated with real examples
 - ✅ **Repository Pattern** - Database-agnostic data access layer
@@ -27,6 +28,7 @@ iRate Backend is a production-ready REST API for fintech operations in Nigeria, 
 - ✅ **Domain-Driven Design** - Rich domain models with business logic
 
 ### Security
+
 - 🔒 JWT Authentication with refresh tokens
 - 🔒 Rate limiting (Redis-backed)
 - 🔒 Brute-force protection
@@ -35,6 +37,7 @@ iRate Backend is a production-ready REST API for fintech operations in Nigeria, 
 - 🔒 HTTP-only cookies for tokens
 
 ### Performance
+
 - ⚡ Redis caching
 - ⚡ Database query optimization
 - ⚡ Connection pooling
@@ -42,9 +45,10 @@ iRate Backend is a production-ready REST API for fintech operations in Nigeria, 
 - ⚡ Background job processing (ready)
 
 ### Nigerian Fintech Specific
+
 - 🇳🇬 Multi-currency wallet (NGN primary)
 - 🇳🇬 BVN verification
-- 🇳🇬 NIN verification  
+- 🇳🇬 NIN verification
 - 🇳🇬 KYC tiers (Tier 1, 2, 3)
 - 🇳🇬 Transaction limits per tier
 - 🇳🇬 Audit logging for compliance
@@ -179,39 +183,44 @@ irate-backend/
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd irate-backend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    ```
 
    Edit `.env` with your values:
+
    ```env
    # Database
    DATABASE_URL="postgresql://user:password@localhost:5432/irate_db"
-   
+
    # Redis
    REDIS_URL="redis://localhost:6379"
-   
+
    # JWT
    JWT_SECRET="your-secret-key-min-32-characters"
    JWT_REFRESH_SECRET="your-refresh-secret-min-32-characters"
-   
+
    # Server
    PORT=4000
    NODE_ENV=development
    ```
 
 4. **Run database migrations**
+
    ```bash
    npm run migrate
    ```
@@ -228,6 +237,7 @@ The API will be available at `http://localhost:4000`
 ## 📚 API Documentation
 
 ### Base URL
+
 ```
 http://localhost:4000/api/v1
 ```
@@ -235,6 +245,7 @@ http://localhost:4000/api/v1
 ### Authentication Endpoints
 
 #### Register User
+
 ```http
 POST /auth/register
 Content-Type: application/json
@@ -247,6 +258,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -259,6 +271,7 @@ Content-Type: application/json
 ```
 
 #### Login
+
 ```http
 POST /auth/login
 Content-Type: application/json
@@ -270,6 +283,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -282,15 +296,18 @@ Content-Type: application/json
   }
 }
 ```
-*Note: Refresh token is set as HTTP-only cookie*
+
+_Note: Refresh token is set as HTTP-only cookie_
 
 #### Refresh Token
+
 ```http
 POST /auth/refresh
 Cookie: refreshToken=<refresh_token>
 ```
 
 #### Logout
+
 ```http
 POST /auth/logout
 Authorization: Bearer <access_token>
@@ -299,12 +316,14 @@ Authorization: Bearer <access_token>
 ### Wallet Endpoints
 
 #### Get Wallet Balance
+
 ```http
 GET /wallet/balance
 Authorization: Bearer <access_token>
 ```
 
 #### Fund Wallet
+
 ```http
 POST /wallet/fund
 Authorization: Bearer <access_token>
@@ -319,6 +338,7 @@ Content-Type: application/json
 ### Transaction Endpoints
 
 #### Transfer Funds
+
 ```http
 POST /transaction/transfer
 Authorization: Bearer <access_token>
@@ -332,6 +352,7 @@ Content-Type: application/json
 ```
 
 #### Get Transaction History
+
 ```http
 GET /transaction/history?page=1&limit=20
 Authorization: Bearer <access_token>
@@ -342,6 +363,7 @@ Authorization: Bearer <access_token>
 ## 🧪 Testing
 
 ### Run Tests
+
 ```bash
 # Unit tests
 npm test
@@ -354,34 +376,35 @@ npm run test:coverage
 ```
 
 ### Example Unit Test (with Repository Mock)
-```typescript
-import { AuthService } from '../auth.service';
-import { IUserRepository } from '../../application/interfaces/repositories/IUserRepository';
 
-describe('AuthService', () => {
+```typescript
+import { AuthService } from "../auth.service";
+import { IUserRepository } from "../../application/interfaces/repositories/IUserRepository";
+
+describe("AuthService", () => {
   let authService: AuthService;
   let mockUserRepo: jest.Mocked<IUserRepository>;
-  
+
   beforeEach(() => {
     mockUserRepo = {
       findByEmail: jest.fn(),
       create: jest.fn(),
     } as any;
-    
+
     authService = new AuthService(mockUserRepo);
   });
-  
-  it('should register new user', async () => {
+
+  it("should register new user", async () => {
     mockUserRepo.findByEmail.mockResolvedValue(null);
     mockUserRepo.create.mockResolvedValue({
-      id: '1',
-      email: 'test@test.com',
+      id: "1",
+      email: "test@test.com",
     } as any);
-    
-    const result = await authService.register('test@test.com', 'password');
-    
+
+    const result = await authService.register("test@test.com", "password");
+
     expect(mockUserRepo.create).toHaveBeenCalled();
-    expect(result.email).toBe('test@test.com');
+    expect(result.email).toBe("test@test.com");
   });
 });
 ```
@@ -420,23 +443,28 @@ npm run type-check       # TypeScript type checking
 ## 🎯 SOLID Principles in Action
 
 ### Single Responsibility Principle
+
 - **Controllers**: HTTP handling only
 - **Services**: Business logic orchestration
 - **Repositories**: Data access only
 
 ### Open/Closed Principle
+
 - Strategy pattern for payment methods
 - Repository pattern allows database swapping
 
 ### Liskov Substitution Principle
+
 - Any repository implementation can replace another
 - Mock repositories in tests
 
 ### Interface Segregation Principle
+
 - Focused interfaces (IUserRepository, IWalletRepository)
 - Clients depend only on methods they need
 
 ### Dependency Inversion Principle
+
 - Services depend on repository interfaces
 - High-level modules don't depend on low-level modules
 
@@ -445,27 +473,32 @@ npm run type-check       # TypeScript type checking
 ## 🔒 Security Features
 
 ### Authentication
+
 - JWT with short-lived access tokens (15 minutes)
 - Long-lived refresh tokens (7 days)
 - Refresh tokens stored in Redis
 - HTTP-only cookies prevent XSS attacks
 
 ### Authorization
+
 - Role-based access control (USER, ADMIN)
 - Route-level protection
 - Resource ownership validation
 
 ### Rate Limiting
+
 - Global: 30 requests/minute
 - Auth endpoints: 5 attempts/15 minutes
 - Transaction endpoints: 10 requests/minute
 
 ### Input Validation
+
 - Zod schemas for all endpoints
 - SQL injection prevention (Prisma)
 - XSS protection (sanitization)
 
 ### Brute Force Protection
+
 - Failed login attempts tracked in Redis
 - Account lockout after 5 failed attempts
 - 5-minute cooldown period
@@ -496,11 +529,13 @@ docker run -p 4000:4000 --env-file .env irate-backend
 ```
 
 ### Health Check
+
 ```http
 GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -536,18 +571,23 @@ GET /health
 ### Common Questions & Answers
 
 **Q: "Explain your backend architecture."**
+
 > "I implemented Clean Architecture with four layers: Presentation (controllers, routes), Application (services, interfaces), Domain (business logic), and Infrastructure (database, cache). Each layer has a single responsibility and dependencies point inward, making the code testable and maintainable."
 
 **Q: "Why use Repository Pattern?"**
+
 > "The Repository Pattern abstracts data access. My services depend on IUserRepository interface, not Prisma. This makes code testable with mock repositories, and portable—I can switch to MongoDB by creating MongoUserRepository without changing business logic."
 
 **Q: "How do you handle security?"**
+
 > "Multiple layers: JWT authentication with refresh tokens, rate limiting per endpoint, brute-force protection in Redis, input validation with Zod, and CORS configuration. Refresh tokens are HTTP-only cookies to prevent XSS, and failed logins are tracked to prevent brute-force attacks."
 
 **Q: "How does your architecture support scalability?"**
+
 > "The stateless design with JWT tokens allows horizontal scaling. Redis handles caching and session management. The layered architecture allows teams to work independently—frontend uses DTOs, backend works on services, database team optimizes repositories. Clear interfaces prevent tight coupling."
 
 ### More Questions in:
+
 - [BACKEND_ARCHITECTURE.md](./BACKEND_ARCHITECTURE.md#-interview-talking-points)
 
 ---

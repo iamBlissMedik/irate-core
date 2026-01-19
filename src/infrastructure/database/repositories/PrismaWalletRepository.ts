@@ -1,4 +1,4 @@
-import { Wallet, Prisma } from "@prisma/client";
+import { Wallet, Prisma } from "@generated/client/client";
 import { prisma } from "@core/config/prisma";
 import {
   IWalletRepository,
@@ -11,7 +11,7 @@ import { AppError } from "@core/errors/AppError";
 
 /**
  * Prisma Implementation of Wallet Repository
- * 
+ *
  * Handles wallet persistence with special focus on
  * atomic balance operations and transactional integrity.
  */
@@ -45,8 +45,6 @@ export class PrismaWalletRepository implements IWalletRepository {
           select: {
             id: true,
             email: true,
-            firstName: true,
-            lastName: true,
           },
         },
       },
@@ -82,7 +80,6 @@ export class PrismaWalletRepository implements IWalletRepository {
     return prisma.wallet.create({
       data: {
         userId: data.userId,
-        currency: data.currency || "NGN",
         balance: data.balance || 0,
       },
     });
@@ -96,7 +93,6 @@ export class PrismaWalletRepository implements IWalletRepository {
       where: { id },
       data: {
         ...(data.balance !== undefined && { balance: data.balance }),
-        ...(data.status && { status: data.status }),
       },
     });
   }
@@ -184,8 +180,8 @@ export class PrismaWalletRepository implements IWalletRepository {
           data: {
             balance: { increment: op.amount }, // Negative for debit, positive for credit
           },
-        })
-      )
+        }),
+      ),
     );
   }
 
@@ -206,33 +202,11 @@ export class PrismaWalletRepository implements IWalletRepository {
   }
 
   /**
-   * Freeze wallet (prevent transactions)
-   */
-  async freeze(id: string): Promise<void> {
-    await prisma.wallet.update({
-      where: { id },
-      data: { status: "FROZEN" },
-    });
-  }
-
-  /**
-   * Unfreeze wallet
-   */
-  async unfreeze(id: string): Promise<void> {
-    await prisma.wallet.update({
-      where: { id },
-      data: { status: "ACTIVE" },
-    });
-  }
-
-  /**
    * Build Prisma where clause from filters
    */
   private buildWhereClause(filters: WalletFilters): Prisma.WalletWhereInput {
     return {
       ...(filters.userId && { userId: filters.userId }),
-      ...(filters.currency && { currency: filters.currency }),
-      ...(filters.status && { status: filters.status }),
     };
   }
 }

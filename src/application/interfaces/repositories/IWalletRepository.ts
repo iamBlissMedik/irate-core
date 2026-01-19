@@ -1,4 +1,4 @@
-import { Wallet } from "@prisma/client";
+import { Wallet } from "@generated/client/client";
 import { IBaseRepository } from "./IBaseRepository";
 
 /**
@@ -6,7 +6,6 @@ import { IBaseRepository } from "./IBaseRepository";
  */
 export interface CreateWalletData {
   userId: string;
-  currency?: string;
   balance?: number;
 }
 
@@ -15,7 +14,6 @@ export interface CreateWalletData {
  */
 export interface UpdateWalletData {
   balance?: number;
-  status?: string;
 }
 
 /**
@@ -23,8 +21,6 @@ export interface UpdateWalletData {
  */
 export interface WalletFilters {
   userId?: string;
-  currency?: string;
-  status?: string;
   skip?: number;
   take?: number;
 }
@@ -39,12 +35,15 @@ export interface WalletOperation {
 
 /**
  * Wallet Repository Interface
- * 
+ *
  * Handles all wallet-related data operations including
  * balance updates and transaction management.
  */
-export interface IWalletRepository
-  extends IBaseRepository<Wallet, CreateWalletData, UpdateWalletData> {
+export interface IWalletRepository extends IBaseRepository<
+  Wallet,
+  CreateWalletData,
+  UpdateWalletData
+> {
   /**
    * Find wallet by user ID
    */
@@ -80,14 +79,4 @@ export interface IWalletRepository
    * Get wallet balance
    */
   getBalance(id: string): Promise<number>;
-
-  /**
-   * Freeze wallet (prevent transactions)
-   */
-  freeze(id: string): Promise<void>;
-
-  /**
-   * Unfreeze wallet
-   */
-  unfreeze(id: string): Promise<void>;
 }

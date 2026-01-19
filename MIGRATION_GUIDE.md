@@ -33,6 +33,7 @@ src/
 ### Step 2: Create Repository Interface
 
 **Before (Direct Prisma access):**
+
 ```typescript
 // auth.service.ts
 export class AuthService {
@@ -44,6 +45,7 @@ export class AuthService {
 ```
 
 **After (Repository Pattern):**
+
 ```typescript
 // 1. Create interface: application/interfaces/repositories/IUserRepository.ts
 export interface IUserRepository {
@@ -57,7 +59,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<User | null> {
     return prisma.user.findUnique({ where: { email } });
   }
-  
+
   async create(data: CreateUserData): Promise<User> {
     return prisma.user.create({ data });
   }
@@ -66,7 +68,7 @@ export class PrismaUserRepository implements IUserRepository {
 // 3. Update service to use interface
 export class AuthService {
   constructor(private userRepository: IUserRepository) {}
-  
+
   async register(email: string, password: string) {
     const user = await this.userRepository.findByEmail(email);
     // ...
@@ -85,10 +87,11 @@ import { AuthService } from "../../modules/auth/auth.service";
 export function initializeContainer() {
   // Register repositories
   container.register("IUserRepository", () => new PrismaUserRepository());
-  
+
   // Register services with dependencies
-  container.register("AuthService", () => 
-    new AuthService(container.resolve("IUserRepository"))
+  container.register(
+    "AuthService",
+    () => new AuthService(container.resolve("IUserRepository")),
   );
 }
 ```
@@ -96,6 +99,7 @@ export function initializeContainer() {
 ### Step 4: Update Controllers to Use DI
 
 **Before:**
+
 ```typescript
 // auth.controller.ts
 const authService = new AuthService(); // ❌ Hard-coded dependency
@@ -108,6 +112,7 @@ export class AuthController {
 ```
 
 **After:**
+
 ```typescript
 // auth.controller.ts
 import { getService } from "@infrastructure/di/serviceContainer";
@@ -128,10 +133,10 @@ import { initializeContainer } from "@infrastructure/di/serviceContainer";
 
 export const createApp = async () => {
   const app = express();
-  
+
   // Initialize DI container first
   initializeContainer();
-  
+
   // ... rest of app setup
 };
 ```
@@ -200,7 +205,7 @@ export class PrismaUserRepository implements IUserRepository {
       take: filters.take,
     });
   }
-  
+
   private buildWhereClause(filters: UserFilters): Prisma.UserWhereInput {
     return {
       ...(filters.email && { email: { contains: filters.email } }),
@@ -222,12 +227,12 @@ async transfer(fromWalletId: string, toWalletId: string, amount: number) {
       where: { id: fromWalletId },
       data: { balance: { decrement: amount } },
     });
-    
+
     await tx.wallet.update({
       where: { id: toWalletId },
       data: { balance: { increment: amount } },
     });
-    
+
     await tx.transaction.create({
       data: { fromWalletId, toWalletId, amount },
     });
@@ -243,13 +248,13 @@ export class Wallet {
   private constructor(
     public readonly id: string,
     private _balance: number,
-    public readonly currency: string
+    public readonly currency: string,
   ) {}
-  
+
   get balance(): number {
     return this._balance;
   }
-  
+
   // Business logic in entity
   withdraw(amount: number): void {
     if (amount > this._balance) {
@@ -257,14 +262,14 @@ export class Wallet {
     }
     this._balance -= amount;
   }
-  
+
   deposit(amount: number): void {
     if (amount <= 0) {
       throw new DomainError("Amount must be positive");
     }
     this._balance += amount;
   }
-  
+
   // Factory method
   static create(userId: string, currency: string): Wallet {
     return new Wallet(generateId(), 0, currency);
@@ -285,22 +290,25 @@ import { IUserRepository } from "../../application/interfaces/repositories/IUser
 describe("AuthService", () => {
   let authService: AuthService;
   let mockUserRepo: jest.Mocked<IUserRepository>;
-  
+
   beforeEach(() => {
     mockUserRepo = {
       findByEmail: jest.fn(),
       create: jest.fn(),
     } as any;
-    
+
     authService = new AuthService(mockUserRepo);
   });
-  
+
   it("should register new user", async () => {
     mockUserRepo.findByEmail.mockResolvedValue(null);
-    mockUserRepo.create.mockResolvedValue({ id: "1", email: "test@test.com" } as any);
-    
+    mockUserRepo.create.mockResolvedValue({
+      id: "1",
+      email: "test@test.com",
+    } as any);
+
     const result = await authService.register("test@test.com", "password");
-    
+
     expect(mockUserRepo.create).toHaveBeenCalled();
     expect(result.email).toBe("test@test.com");
   });
@@ -312,32 +320,40 @@ describe("AuthService", () => {
 ## 🎯 Benefits of New Architecture
 
 ### 1. Testability
+
 **Before:** Hard to test - must mock Prisma globally
+
 ```typescript
 jest.mock("@prisma/client");
 // Complex setup
 ```
 
 **After:** Easy to test - inject mock repository
+
 ```typescript
 const mockRepo = { findById: jest.fn() };
 const service = new UserService(mockRepo);
 ```
 
 ### 2. Flexibility
+
 **Before:** Tightly coupled to Prisma
+
 ```typescript
 // Switching to MongoDB requires rewriting all services
 ```
 
 **After:** Database-agnostic
+
 ```typescript
 // Just create MongoUserRepository implementing IUserRepository
 container.register("IUserRepository", () => new MongoUserRepository());
 ```
 
 ### 3. Maintainability
+
 **Before:** Business logic mixed with data access
+
 ```typescript
 async transfer() {
   // Validation logic
@@ -349,6 +365,7 @@ async transfer() {
 ```
 
 **After:** Clear separation
+
 ```typescript
 // Service: Business logic only
 async transfer() {
@@ -368,6 +385,7 @@ async update(wallet: Wallet) {
 ## 🚨 Common Mistakes to Avoid
 
 ### ❌ Don't Access Prisma in Services
+
 ```typescript
 // BAD
 export class UserService {
@@ -378,11 +396,12 @@ export class UserService {
 ```
 
 ### ✅ Use Repository
+
 ```typescript
 // GOOD
 export class UserService {
   constructor(private userRepo: IUserRepository) {}
-  
+
   async getUser(id: string) {
     return this.userRepo.findById(id); // ✅
   }
@@ -390,26 +409,28 @@ export class UserService {
 ```
 
 ### ❌ Don't Put Business Logic in Repositories
+
 ```typescript
 // BAD
 export class PrismaUserRepository {
   async createUser(email: string) {
     // Business validation ❌
     if (!email.includes("@")) throw new Error("Invalid email");
-    
+
     return prisma.user.create({ data: { email } });
   }
 }
 ```
 
 ### ✅ Keep Repositories for Data Access Only
+
 ```typescript
 // GOOD - Validation in service
 export class UserService {
   async createUser(email: string) {
     // Business validation ✅
     if (!email.includes("@")) throw new ValidationError("Invalid email");
-    
+
     return this.userRepo.create({ email });
   }
 }
@@ -427,11 +448,13 @@ export class PrismaUserRepository {
 ## 📈 Migration Progress Tracker
 
 ### Phase 1: Foundation ✅
+
 - [x] Create DI container
 - [x] Set up folder structure
 - [x] Document architecture
 
 ### Phase 2: Core Modules
+
 - [x] Auth module
   - [x] IUserRepository
   - [x] PrismaUserRepository
@@ -449,6 +472,7 @@ export class PrismaUserRepository {
   - [ ] Update TransactionController
 
 ### Phase 3: Advanced Features
+
 - [ ] Domain entities with behavior
 - [ ] Domain events
 - [ ] CQRS pattern (optional)
@@ -459,12 +483,15 @@ export class PrismaUserRepository {
 ## 🎤 Interview Talking Points
 
 **Q: "Why did you refactor to use repositories?"**
+
 > "I implemented the Repository Pattern to abstract data access from business logic. Now my AuthService depends on IUserRepository interface, not Prisma directly. This makes the code testable—I can inject mock repositories—and portable—I can switch to MongoDB by creating MongoUserRepository without touching business logic."
 
 **Q: "What is dependency injection and why use it?"**
+
 > "Dependency Injection inverts control of object creation. Instead of `new AuthService()`, I register services in a container and resolve them. This loose coupling makes code testable (inject mocks), configurable (swap implementations), and maintainable (single source for dependencies)."
 
 **Q: "How does this help with scalability?"**
+
 > "The layered architecture allows teams to work in parallel. Frontend team uses DTOs, backend team works on services, database team optimizes repositories. Each layer has clear contracts (interfaces), so changes are isolated. We can also scale horizontally since services are stateless."
 
 ---

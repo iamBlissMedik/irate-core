@@ -1,4 +1,4 @@
-import { User, Prisma } from "@prisma/client";
+import { User, Prisma } from "@generated/client/client";
 import { prisma } from "@core/config/prisma";
 import {
   IUserRepository,
@@ -9,7 +9,7 @@ import {
 
 /**
  * Prisma Implementation of User Repository
- * 
+ *
  * Implements IUserRepository interface using Prisma ORM.
  * Can be replaced with MongoDB, PostgreSQL raw queries, etc.
  * without changing business logic.
@@ -30,15 +30,6 @@ export class PrismaUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<User | null> {
     return prisma.user.findUnique({
       where: { email },
-    });
-  }
-
-  /**
-   * Find user by phone number
-   */
-  async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
-    return prisma.user.findFirst({
-      where: { phoneNumber },
     });
   }
 
@@ -72,9 +63,7 @@ export class PrismaUserRepository implements IUserRepository {
       data: {
         email: data.email,
         password: data.password,
-        phoneNumber: data.phoneNumber,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        ...(data.role && { role: data.role as any }),
       },
     });
   }
@@ -88,11 +77,7 @@ export class PrismaUserRepository implements IUserRepository {
       data: {
         ...(data.email && { email: data.email }),
         ...(data.password && { password: data.password }),
-        ...(data.phoneNumber && { phoneNumber: data.phoneNumber }),
-        ...(data.firstName && { firstName: data.firstName }),
-        ...(data.lastName && { lastName: data.lastName }),
-        ...(data.role && { role: data.role }),
-        ...(data.status && { status: data.status }),
+        ...(data.role && { role: data.role as any }),
       },
     });
   }
@@ -144,8 +129,7 @@ export class PrismaUserRepository implements IUserRepository {
       ...(filters.email && {
         email: { contains: filters.email, mode: "insensitive" },
       }),
-      ...(filters.role && { role: filters.role }),
-      ...(filters.status && { status: filters.status }),
+      ...(filters.role && { role: filters.role as any }),
     };
   }
 }

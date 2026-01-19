@@ -1,4 +1,4 @@
-import { User } from "@prisma/client";
+import { User } from "@generated/client/client";
 import { IBaseRepository } from "./IBaseRepository";
 
 /**
@@ -7,9 +7,7 @@ import { IBaseRepository } from "./IBaseRepository";
 export interface CreateUserData {
   email: string;
   password: string;
-  phoneNumber?: string;
-  firstName?: string;
-  lastName?: string;
+  role?: string;
 }
 
 /**
@@ -18,11 +16,7 @@ export interface CreateUserData {
 export interface UpdateUserData {
   email?: string;
   password?: string;
-  phoneNumber?: string;
-  firstName?: string;
-  lastName?: string;
   role?: string;
-  status?: string;
 }
 
 /**
@@ -31,28 +25,25 @@ export interface UpdateUserData {
 export interface UserFilters {
   email?: string;
   role?: string;
-  status?: string;
   skip?: number;
   take?: number;
 }
 
 /**
  * User Repository Interface
- * 
+ *
  * Defines all data access operations for User entities.
  * Following Repository Pattern to abstract Prisma implementation.
  */
-export interface IUserRepository
-  extends IBaseRepository<User, CreateUserData, UpdateUserData> {
+export interface IUserRepository extends IBaseRepository<
+  User,
+  CreateUserData,
+  UpdateUserData
+> {
   /**
    * Find user by email (common operation for authentication)
    */
   findByEmail(email: string): Promise<User | null>;
-
-  /**
-   * Find user by phone number
-   */
-  findByPhoneNumber(phoneNumber: string): Promise<User | null>;
 
   /**
    * Find many users with pagination and filtering

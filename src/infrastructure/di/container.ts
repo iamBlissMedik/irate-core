@@ -1,9 +1,9 @@
 /**
  * Simple Dependency Injection Container
- * 
+ *
  * Lightweight DI implementation without external dependencies.
  * For production, consider using InversifyJS or TSyringe.
- * 
+ *
  * Usage:
  * ```ts
  * container.register('IUserRepository', () => new PrismaUserRepository());
@@ -25,7 +25,7 @@ export class DIContainer {
 
   /**
    * Register a service with the container
-   * 
+   *
    * @param name - Service identifier (usually interface name)
    * @param factory - Function that creates the service instance
    * @param scope - 'singleton' (one instance) or 'transient' (new instance each time)
@@ -33,14 +33,14 @@ export class DIContainer {
   register<T>(
     name: string,
     factory: Factory<T>,
-    scope: Scope = "singleton"
+    scope: Scope = "singleton",
   ): void {
     this.services.set(name, { factory, scope });
   }
 
   /**
    * Resolve a service from the container
-   * 
+   *
    * @param name - Service identifier
    * @returns Service instance
    */
@@ -50,7 +50,7 @@ export class DIContainer {
     if (!registration) {
       throw new Error(
         `Service "${name}" not registered in DI container. ` +
-          `Available services: ${Array.from(this.services.keys()).join(", ")}`
+          `Available services: ${Array.from(this.services.keys()).join(", ")}`,
       );
     }
 

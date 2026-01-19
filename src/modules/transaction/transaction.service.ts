@@ -1,15 +1,22 @@
 import { prisma } from "@core/config/prisma";
 import { redis } from "@core/config/redis";
 import { AppError } from "@core/errors/AppError";
+import { ITransactionRepository } from "@application/interfaces/repositories/ITransactionRepository";
+import { IWalletRepository } from "@application/interfaces/repositories/IWalletRepository";
 import dayjs from "dayjs";
 
 export class TransactionService {
+  constructor(
+    private transactionRepository?: ITransactionRepository,
+    private walletRepository?: IWalletRepository,
+  ) {}
+
   async transfer(
     fromWalletId: string,
     toWalletId: string,
     amount: number,
     userId: string,
-    idempotencyKey?: string
+    idempotencyKey?: string,
   ) {
     if (amount <= 0) throw new AppError("Amount must be positive.");
 
@@ -37,7 +44,7 @@ export class TransactionService {
       if (from.userId !== userId) {
         throw new AppError(
           "Unauthorized: You can only transfer from your own wallet.",
-          403
+          403,
         );
       }
 
@@ -94,11 +101,11 @@ export class TransactionService {
       // Cache wallet balances
       await redis.set(
         `wallet:${fromWalletId}:balance`,
-        updatedFrom.balance.toString()
+        updatedFrom.balance.toString(),
       );
       await redis.set(
         `wallet:${toWalletId}:balance`,
-        updatedTo.balance.toString()
+        updatedTo.balance.toString(),
       );
 
       return { from: updatedFrom, to: updatedTo };
@@ -114,7 +121,7 @@ export class TransactionService {
     walletId: string,
     userId: string,
     page = 1,
-    limit = 10
+    limit = 10,
   ) {
     const skip = (page - 1) * limit;
 
@@ -183,7 +190,7 @@ export class TransactionService {
       // Update cache
       await redis.set(
         `wallet:${walletId}:balance`,
-        updatedWallet.balance.toString()
+        updatedWallet.balance.toString(),
       );
 
       return updatedWallet;
@@ -305,6 +312,4 @@ export class TransactionService {
       currency: "NGN",
     };
   }
-
-
 }

@@ -1,4 +1,4 @@
-import { Transaction, Prisma } from "@prisma/client";
+import { Transaction, Prisma } from "@generated/client/client";
 import { prisma } from "@core/config/prisma";
 import {
   ITransactionRepository,
@@ -10,9 +10,8 @@ import {
 
 /**
  * Prisma Implementation of Transaction Repository
- * 
- * Manages transaction records with filtering, statistics,
- * and reference-based idempotency checks.
+ *
+ * Manages transaction records with filtering and statistics.
  */
 export class PrismaTransactionRepository implements ITransactionRepository {
   /**
@@ -22,10 +21,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     return prisma.transaction.findUnique({
       where: { id },
       include: {
-        fromWallet: {
-          include: { user: true },
-        },
-        toWallet: {
+        wallet: {
           include: { user: true },
         },
       },
@@ -37,50 +33,16 @@ export class PrismaTransactionRepository implements ITransactionRepository {
    */
   async findByWalletId(
     walletId: string,
-    filters: TransactionFilters = {}
+    filters: TransactionFilters = {},
   ): Promise<Transaction[]> {
     return prisma.transaction.findMany({
       where: {
-        OR: [{ fromWalletId: walletId }, { toWalletId: walletId }],
+        walletId,
         ...this.buildWhereClause(filters),
       },
       orderBy: { createdAt: "desc" },
       skip: filters.skip,
       take: filters.take,
-    });
-  }
-
-  /**
-   * Find transactions by user ID (across all wallets)
-   */
-  async findByUserId(
-    userId: string,
-    filters: TransactionFilters = {}
-  ): Promise<Transaction[]> {
-    return prisma.transaction.findMany({
-      where: {
-        OR: [
-          { fromWallet: { userId } },
-          { toWallet: { userId } },
-        ],
-        ...this.buildWhereClause(filters),
-      },
-      include: {
-        fromWallet: true,
-        toWallet: true,
-      },
-      orderBy: { createdAt: "desc" },
-      skip: filters.skip,
-      take: filters.take,
-    });
-  }
-
-  /**
-   * Find transaction by reference
-   */
-  async findByReference(reference: string): Promise<Transaction | null> {
-    return prisma.transaction.findUnique({
-      where: { reference },
     });
   }
 
@@ -88,7 +50,7 @@ export class PrismaTransactionRepository implements ITransactionRepository {
    * Get transaction history with pagination
    */
   async getHistory(
-    filters: TransactionFilters
+    filters: TransactionFilters,
   ): Promise<{ transactions: Transaction[]; total: number }> {
     const where = this.buildWhereClause(filters);
 
@@ -99,26 +61,12 @@ export class PrismaTransactionRepository implements ITransactionRepository {
         skip: filters.skip,
         take: filters.take,
         include: {
-          fromWallet: {
+          wallet: {
             select: {
               id: true,
               user: {
                 select: {
                   email: true,
-                  firstName: true,
-                  lastName: true,
-                },
-              },
-            },
-          },
-          toWallet: {
-            select: {
-              id: true,
-              user: {
-                select: {
-                  email: true,
-                  firstName: true,
-                  lastName: true,
                 },
               },
             },
@@ -137,39 +85,46 @@ export class PrismaTransactionRepository implements ITransactionRepository {
   async getStats(
     walletId: string,
     fromDate?: Date,
-    toDate?: Date
+    toDate?: Date,
   ): Promise<TransactionStats> {
     const where: Prisma.TransactionWhereInput = {
-      OR: [{ fromWalletId: walletId }, { toWalletId: walletId }],
+      walletId,
       ...(fromDate && { createdAt: { gte: fromDate } }),
       ...(toDate && { createdAt: { lte: toDate } }),
     };
 
-    const [totalTransactions, successfulTransactions, failedTransactions, pendingTransactions, sumResult] =
-      await Promise.all([
-        prisma.transaction.count({ where }),
-        prisma.transaction.count({
-          where: { ...where, status: "SUCCESS" },
-        }),
-        prisma.transaction.count({
-          where: { ...where, status: "FAILED" },
-        }),
-        prisma.transaction.count({
-          where: { ...where, status: "PENDING" },
-        }),
-        prisma.transaction.aggregate({
-          where: { ...where, status: "SUCCESS" },
-          _sum: { amount: true },
-        }),
-      ]);
+    const [totalTransactions, creditSum, debitSum] = await Promise.all([
+      prisma.transaction.count({ where }),
+      prisma.transaction.aggregate({
+        where: { ...where, type: "CREDIT" },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { ...where, type: "DEBIT" },
+        _sum: { amount: true },
+      }),
+    ]);
 
     return {
       totalTransactions,
-      totalAmount: sumResult._sum.amount || 0,
-      successfulTransactions,
-      failedTransactions,
-      pendingTransactions,
+      totalAmount: (creditSum._sum.amount || 0) + (debitSum._sum.amount || 0),
+      creditAmount: creditSum._sum.amount || 0,
+      debitAmount: debitSum._sum.amount || 0,
     };
+  }
+
+  /**
+   * Get recent transactions
+   */
+  async getRecent(
+    walletId: string,
+    limit: number = 10,
+  ): Promise<Transaction[]> {
+    return prisma.transaction.findMany({
+      where: { walletId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
   }
 
   /**
@@ -200,14 +155,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
   async create(data: CreateTransactionData): Promise<Transaction> {
     return prisma.transaction.create({
       data: {
-        fromWalletId: data.fromWalletId,
-        toWalletId: data.toWalletId,
+        walletId: data.walletId,
         amount: data.amount,
-        type: data.type,
-        status: data.status || "PENDING",
-        reference: data.reference || this.generateReference(),
-        description: data.description,
-        metadata: data.metadata,
+        type: data.type as any, // TransactionType enum
       },
     });
   }
@@ -219,19 +169,9 @@ export class PrismaTransactionRepository implements ITransactionRepository {
     return prisma.transaction.update({
       where: { id },
       data: {
-        ...(data.status && { status: data.status }),
-        ...(data.metadata && { metadata: data.metadata }),
+        ...(data.type && { type: data.type as any }),
+        ...(data.amount !== undefined && { amount: data.amount }),
       },
-    });
-  }
-
-  /**
-   * Update transaction status
-   */
-  async updateStatus(id: string, status: string): Promise<Transaction> {
-    return prisma.transaction.update({
-      where: { id },
-      data: { status },
     });
   }
 
@@ -255,62 +195,18 @@ export class PrismaTransactionRepository implements ITransactionRepository {
   }
 
   /**
-   * Check if reference exists (for idempotency)
-   */
-  async referenceExists(reference: string): Promise<boolean> {
-    const count = await prisma.transaction.count({
-      where: { reference },
-    });
-    return count > 0;
-  }
-
-  /**
-   * Get recent transactions
-   */
-  async getRecent(walletId: string, limit: number = 10): Promise<Transaction[]> {
-    return prisma.transaction.findMany({
-      where: {
-        OR: [{ fromWalletId: walletId }, { toWalletId: walletId }],
-      },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      include: {
-        fromWallet: {
-          include: { user: true },
-        },
-        toWallet: {
-          include: { user: true },
-        },
-      },
-    });
-  }
-
-  /**
    * Build Prisma where clause from filters
    */
-  private buildWhereClause(filters: TransactionFilters): Prisma.TransactionWhereInput {
+  private buildWhereClause(
+    filters: TransactionFilters,
+  ): Prisma.TransactionWhereInput {
     return {
-      ...(filters.walletId && {
-        OR: [
-          { fromWalletId: filters.walletId },
-          { toWalletId: filters.walletId },
-        ],
-      }),
-      ...(filters.type && { type: filters.type }),
-      ...(filters.status && { status: filters.status }),
+      ...(filters.walletId && { walletId: filters.walletId }),
+      ...(filters.type && { type: filters.type as any }),
       ...(filters.fromDate && { createdAt: { gte: filters.fromDate } }),
       ...(filters.toDate && { createdAt: { lte: filters.toDate } }),
       ...(filters.minAmount && { amount: { gte: filters.minAmount } }),
       ...(filters.maxAmount && { amount: { lte: filters.maxAmount } }),
     };
-  }
-
-  /**
-   * Generate unique transaction reference
-   */
-  private generateReference(): string {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 9).toUpperCase();
-    return `TXN-${timestamp}-${random}`;
   }
 }
