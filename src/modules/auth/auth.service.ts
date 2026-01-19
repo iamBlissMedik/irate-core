@@ -1,34 +1,79 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { prisma } from "@core/config/prisma";
 import { redis } from "@core/config/redis";
 import { AppError } from "@core/errors/AppError";
 import { ValidationError } from "@core/errors/ValidationError";
 import { AuthError } from "@core/errors/AuthError";
 import { config } from "@core/config/env";
+import { IUserRepository } from "@application/interfaces/repositories/IUserRepository";
+import { IWalletRepository } from "@application/interfaces/repositories/IWalletRepository";
 
+/**
+ * Authentication Service
+ * 
+ * Handles user authentication use cases following Clean Architecture.
+ * Depends on repository interfaces, not Prisma directly.
+ * 
+ * Benefits:
+ * - Testable (inject mock repositories)
+ * - Database-agnostic (swap Prisma for MongoDB without changing this file)
+ * - Follows Dependency Inversion Principle
+ */
 export class AuthService {
+  constructor(
+    private userRepository: IUserRepository,
+    private walletRepository: IWalletRepository
+  ) {}
+
+  /**
+   * Register new user
+   * 
+   * @param email - User email
+   * @param password - Plain text password (will be hashed)
+   * @returns Created user data (without password)
+   */
   async register(email: string, password: string) {
     if (!email || !password)
       throw new ValidationError("Email and password are required");
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    // Check if user exists (using repository)
+    const existing = await this.userRepository.findByEmail(email);
     if (existing) throw new AppError("User already exists", 400);
 
+    // Hash password
     const hashed = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { email, password: hashed },
+
+    // Create user (using repository)
+    const user = await this.userRepository.create({
+      email,
+      password: hashed,
+    });
+
+    // Create wallet for user (separation of concerns)
+    await this.walletRepository.create({
+      userId: user.id,
+      currency: "NGN",
+      balance: 0,
     });
 
     return { id: user.id, email: user.email };
   }
 
+  /**
+   * Authenticate user
+   * 
+   * @param email - User email
+   * @param password - Plain text password
+   * @returns Access token, refresh token, and user data
+   */
   async login(email: string, password: string) {
     if (!email || !password)
       throw new ValidationError("Email and password are required");
 
     const key = `login:fail:${email}`;
-    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Find user (using repository)
+    const user = await this.userRepository.findByEmail(email);
     if (!user) throw new AppError("Email not found", 404);
 
     // 🔒 Brute-force protection

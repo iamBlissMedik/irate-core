@@ -11,9 +11,13 @@ import cookieParser from "cookie-parser";
 import requestLogger from "./middleware/requestLogger";
 import { notFoundHandler } from "./utils/notFoundHandler";
 import { v1Router } from "routes/v1/v1.routes";
+import { initializeContainer } from "@infrastructure/di/serviceContainer";
 
 export const createApp = async () => {
   const app = express();
+
+  // 🏗️ Initialize dependency injection container
+  initializeContainer();
 
   // 🔐 Core security middleware first
   app.use(corsMiddleware);
