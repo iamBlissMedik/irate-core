@@ -1,11 +1,25 @@
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
-import { AppError } from "@core/errors/AppError";
+import { getService } from "@infrastructure/di/serviceContainer";
 
-const authService = new AuthService();
-
+/**
+ * Authentication Controller
+ *
+ * Handles HTTP requests for authentication endpoints.
+ * Uses dependency injection to get AuthService instance.
+ *
+ * Following Single Responsibility Principle:
+ * - Controller: HTTP handling, request/response formatting
+ * - Service: Business logic
+ * - Repository: Data access
+ */
 export class AuthController {
+  /**
+   * Register new user
+   * POST /api/v1/auth/register
+   */
   register = async (req: Request, res: Response) => {
+    const authService = getService<AuthService>("AuthService");
     const { email, password } = req.body;
     const user = await authService.register(email, password);
 
@@ -16,11 +30,16 @@ export class AuthController {
     });
   };
 
+  /**
+   * Login user
+   * POST /api/v1/auth/login
+   */
   login = async (req: Request, res: Response) => {
+    const authService = getService<AuthService>("AuthService");
     const { email, password } = req.body;
     const { accessToken, refreshToken, user } = await authService.login(
       email,
-      password
+      password,
     );
     // ✅ Store refresh token in HttpOnly cookie
     res.cookie("refreshToken", refreshToken, {
@@ -39,7 +58,12 @@ export class AuthController {
     });
   };
 
+  /**
+   * Refresh access token
+   * POST /api/v1/auth/refresh
+   */
   refresh = async (req: Request, res: Response) => {
+    const authService = getService<AuthService>("AuthService");
     const refreshToken = req.cookies.refreshToken;
     const result = await authService.refresh(refreshToken);
 
@@ -50,7 +74,12 @@ export class AuthController {
     });
   };
 
+  /**
+   * Logout user
+   * POST /api/v1/auth/logout
+   */
   logout = async (req: Request, res: Response) => {
+    const authService = getService<AuthService>("AuthService");
     const userId = req.user?.id;
     const authHeader = req.headers.authorization;
     const accessToken = authHeader?.replace("Bearer ", "");

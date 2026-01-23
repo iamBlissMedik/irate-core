@@ -13,11 +13,20 @@
     "paths": {
       "@core/*": ["core/*"],
       "@modules/*": ["modules/*"],
-      "@config/*": ["config/*"]
+      "@config/*": ["config/*"],
+      "@application/*": ["application/*"],
+      "@infrastructure/*": ["infrastructure/*"],
+      "@domain/*": ["domain/*"],
+      "@generated/*": ["generated/*"]
     },
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "types": ["node", "express"]
   },
-  "include": ["src/**/*.ts", "src/types/**/*.ts", "src/types/**/*.d.ts", "src/types/express.tts"],
+  "include": [
+    "src/**/*.ts",
+    "src/types/**/*.ts",
+    "src/types/**/*.d.ts",
+    "src/types/express.tts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

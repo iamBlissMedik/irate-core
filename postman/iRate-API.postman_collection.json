@@ -1,0 +1,780 @@
+{
+  "info": {
+    "name": "iRate Fintech API",
+    "description": "Complete API documentation for iRate - Nigerian Fintech Platform\n\n## Features\n- User Authentication (Register, Login, Refresh Token)\n- Wallet Management\n- Transactions & Transfers\n- KYC Verification\n- Admin Dashboard\n\n## Authentication\nMost endpoints require Bearer token authentication. After login, the access token is automatically saved to the environment.\n\n## Base URL\n{{baseUrl}}/api/v1\n\n## Environment Variables\n- `baseUrl`: API base URL (e.g., http://localhost:5000)\n- `accessToken`: JWT access token (set automatically after login)\n- `refreshToken`: JWT refresh token (set automatically after login)\n- `userId`: Current user ID\n- `walletId`: User's wallet ID",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.user) {",
+                  "        pm.environment.set('userId', response.data.user.id);",
+                  "        console.log('User ID saved:', response.data.user.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Register a new user account.\n\n**Request Body:**\n- `email` (string, required): Valid email address\n- `password` (string, required): Minimum 8 characters\n\n**Response:**\n- Creates user account\n- Automatically creates a wallet with 0 balance\n- Returns user ID and email"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data) {",
+                  "        pm.environment.set('accessToken', response.data.accessToken);",
+                  "        pm.environment.set('refreshToken', response.data.refreshToken);",
+                  "        pm.environment.set('userId', response.data.user.id);",
+                  "        console.log('Tokens saved successfully');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Authenticate user and receive JWT tokens.\n\n**Request Body:**\n- `email` (string, required)\n- `password` (string, required)\n\n**Response:**\n- `accessToken`: Short-lived JWT for API requests (15min)\n- `refreshToken`: Long-lived token for getting new access tokens (7 days)\n- Tokens are automatically saved to environment"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data) {",
+                  "        pm.environment.set('accessToken', response.data.accessToken);",
+                  "        console.log('Access token refreshed');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "description": "Get a new access token using refresh token.\n\n**Use when:** Access token expires (after 15 minutes)\n\n**Request Body:**\n- `refreshToken` (string, required): From login response"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Logout current user and invalidate tokens.\n\n**Requires:** Bearer token authentication"
+          },
+          "response": []
+        }
+      ],
+      "description": "User authentication endpoints including register, login, token refresh, and logout."
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            },
+            "description": "Get current authenticated user's profile.\n\n**Requires:** Bearer token\n\n**Response:**\n- User ID\n- Email\n- Role\n- Created date"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/:userId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Get specific user details by ID.\n\n**Path Parameters:**\n- `userId` (string, required): Target user ID"
+          },
+          "response": []
+        }
+      ],
+      "description": "User profile management endpoints."
+    },
+    {
+      "name": "Wallets",
+      "item": [
+        {
+          "name": "Create Wallet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.id) {",
+                  "        pm.environment.set('walletId', response.data.id);",
+                  "        console.log('Wallet ID saved:', response.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/wallets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "wallets"]
+            },
+            "description": "Create a new wallet for the authenticated user.\n\n**Note:** A wallet is automatically created during registration. This endpoint allows creating additional wallets if needed.\n\n**Requires:** Bearer token\n\n**Response:**\n- Wallet ID (saved to environment)\n- User ID\n- Balance (starts at 0)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Wallets",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/wallets?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "wallets"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10)"
+                }
+              ]
+            },
+            "description": "Get all wallets belonging to the authenticated user.\n\n**Query Parameters:**\n- `page` (number, optional): Page number (default: 1)\n- `limit` (number, optional): Items per page (default: 10)\n\n**Response:**\n- Array of wallets with balances\n- Pagination metadata (total, page, totalPages)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wallet Balance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/wallets/:walletId/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "wallets", ":walletId", "balance"],
+              "variable": [
+                {
+                  "key": "walletId",
+                  "value": "{{walletId}}",
+                  "description": "Wallet ID"
+                }
+              ]
+            },
+            "description": "Get current balance of a specific wallet.\n\n**Path Parameters:**\n- `walletId` (string, required): Target wallet ID\n\n**Response:**\n- Current balance in NGN (Nigerian Naira)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Wallet management endpoints for creating wallets, viewing balances, and listing user wallets."
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Transfer Money",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "description": "Unique key to prevent duplicate transfers",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromWalletId\": \"{{walletId}}\",\n  \"toWalletId\": \"clxxxxxxxxxxxxxxx\",\n  \"amount\": 1000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions", "transfer"]
+            },
+            "description": "Transfer money between wallets.\n\n**Request Headers:**\n- `Idempotency-Key` (string, required): UUID to prevent duplicate transactions\n\n**Request Body:**\n- `fromWalletId` (string, required): Source wallet (must be owned by user)\n- `toWalletId` (string, required): Destination wallet\n- `amount` (number, required): Amount in NGN (must be positive)\n\n**Features:**\n- Atomic transaction (both wallets updated or neither)\n- Idempotency (duplicate requests with same key return cached result)\n- Automatic ledger entries created\n- Cached for 1 hour\n\n**Errors:**\n- 400: Invalid amount or insufficient funds\n- 403: Unauthorized (trying to transfer from wallet you don't own)\n- 404: Wallet not found"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wallet Transactions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/:walletId/transactions?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "transactions", ":walletId", "transactions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "walletId",
+                  "value": "{{walletId}}",
+                  "description": "Wallet ID"
+                }
+              ]
+            },
+            "description": "Get transaction history for a specific wallet.\n\n**Path Parameters:**\n- `walletId` (string, required): Target wallet ID\n\n**Query Parameters:**\n- `page` (number, optional): Page number (default: 1)\n- `limit` (number, optional): Items per page (default: 10)\n\n**Response:**\n- Array of transactions (credit and debit)\n- Transaction type, amount, date\n- Pagination metadata"
+          },
+          "response": []
+        }
+      ],
+      "description": "Transaction endpoints for transfers and viewing transaction history."
+    },
+    {
+      "name": "KYC",
+      "item": [
+        {
+          "name": "Submit KYC",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"dateOfBirth\": \"1990-01-15\",\n  \"address\": \"123 Lagos Street, Ikeja, Lagos\",\n  \"idType\": \"NIN\",\n  \"idNumber\": \"12345678901\",\n  \"documentUrl\": \"https://example.com/documents/id.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/kyc/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "kyc", "submit"]
+            },
+            "description": "Submit KYC (Know Your Customer) verification documents.\n\n**Request Body:**\n- `fullName` (string, required): Full legal name\n- `dateOfBirth` (string, required): Format: YYYY-MM-DD\n- `address` (string, required): Full residential address\n- `idType` (string, required): ID type (NIN, BVN, Driver's License, Passport)\n- `idNumber` (string, required): ID number\n- `documentUrl` (string, optional): URL to uploaded ID document\n\n**Nigerian Fintech Compliance:**\n- Supports BVN (Bank Verification Number)\n- Supports NIN (National Identification Number)\n- Required for regulatory compliance\n\n**Response:**\n- KYC submission ID\n- Status: PENDING (awaiting admin review)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My KYC Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/kyc/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "kyc", "status"]
+            },
+            "description": "Get KYC verification status for authenticated user.\n\n**Response:**\n- KYC status: PENDING, VERIFIED, or REJECTED\n- Submission details\n- Verification date (if verified)"
+          },
+          "response": []
+        }
+      ],
+      "description": "KYC (Know Your Customer) verification endpoints for Nigerian fintech compliance."
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Admin Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "me"]
+            },
+            "description": "Get admin user profile.\n\n**Requires:** Admin role\n\n**Response:**\n- Admin user details\n- Role: ADMIN"
+          },
+          "response": []
+        },
+        {
+          "name": "Credit Wallet (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"description\": \"Bonus credit\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/credit/:walletId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "credit", ":walletId"],
+              "variable": [
+                {
+                  "key": "walletId",
+                  "value": "{{walletId}}",
+                  "description": "Target wallet ID"
+                }
+              ]
+            },
+            "description": "Credit funds to a user's wallet (admin only).\n\n**Requires:** Admin role\n\n**Path Parameters:**\n- `walletId` (string, required): Target wallet ID\n\n**Request Body:**\n- `amount` (number, required): Amount to credit\n- `description` (string, optional): Credit reason\n\n**Use Cases:**\n- Bonus credits\n- Refunds\n- Promotional credits\n- Error corrections"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get list of all users (admin only).\n\n**Requires:** Admin role\n\n**Query Parameters:**\n- `page` (number, optional): Page number\n- `limit` (number, optional): Items per page\n\n**Response:**\n- Array of all users\n- User details (email, role, created date)\n- Pagination metadata"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Wallets Balance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/wallets/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "wallets", "balance"]
+            },
+            "description": "Get total balance across all wallets in the platform.\n\n**Requires:** Admin role\n\n**Response:**\n- Total balance sum\n- Number of wallets\n- Useful for financial reconciliation"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Users Statistics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users", "stats"]
+            },
+            "description": "Get platform user statistics.\n\n**Requires:** Admin role\n\n**Response:**\n- Total users count\n- Active users\n- Users by role\n- Growth metrics"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Overview",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/dashboard/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "dashboard", "overview"]
+            },
+            "description": "Get comprehensive dashboard overview.\n\n**Requires:** Admin role\n\n**Response:**\n- Total users\n- Total wallets\n- Total balance\n- Transaction statistics\n- KYC statistics\n- Platform health metrics"
+          },
+          "response": []
+        },
+        {
+          "name": "List All KYC Submissions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/kyc?status=PENDING&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "kyc"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Filter by status (PENDING, VERIFIED, REJECTED)"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all KYC submissions for review.\n\n**Requires:** Admin role\n\n**Query Parameters:**\n- `status` (string, optional): Filter by KYC status\n- `page` (number, optional): Page number\n- `limit` (number, optional): Items per page\n\n**Response:**\n- Array of KYC submissions\n- User details\n- Verification status\n- Submitted documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Review KYC Submission",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"VERIFIED\",\n  \"comment\": \"Documents verified successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/kyc/:kycId/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "kyc", ":kycId", "review"],
+              "variable": [
+                {
+                  "key": "kycId",
+                  "value": "{{kycId}}",
+                  "description": "KYC submission ID"
+                }
+              ]
+            },
+            "description": "Approve or reject a KYC submission.\n\n**Requires:** Admin role\n\n**Path Parameters:**\n- `kycId` (string, required): KYC submission ID\n\n**Request Body:**\n- `status` (string, required): VERIFIED or REJECTED\n- `comment` (string, optional): Review notes\n\n**Response:**\n- Updated KYC status\n- Verification timestamp\n- Notifications sent to user"
+          },
+          "response": []
+        }
+      ],
+      "description": "Admin-only endpoints for platform management, user administration, and KYC review."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}
