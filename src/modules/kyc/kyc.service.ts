@@ -90,16 +90,6 @@ export class KycService {
       },
     });
 
-    // ✅ Optionally mark user as verified
-    if (status === "VERIFIED") {
-      await prisma.user.update({
-        where: { id: kyc.userId },
-        data: {
-          role: "USER", // optional, if role changes after verification
-        },
-      });
-    }
-
     return updated;
   }
 

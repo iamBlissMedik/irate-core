@@ -1,0 +1,361 @@
+{
+  "info": {
+    "name": "iRate Backend API",
+    "description": "Role-based fintech wallet & ledger API.\n\n## Conventions\n- Base URL: `{{baseUrl}}` (default http://localhost:8000/api/v1)\n- Auth: Bearer access token. Run **Auth > Login** (saves `{{accessToken}}`) or **Auth > Login (Admin)** (saves `{{adminToken}}`).\n- **Money is in MINOR UNITS (kobo).** 1 NGN = 100 kobo. Amounts are sent and returned as integers; balances are returned as strings to preserve precision.\n\n## Keep this collection in sync\nWhenever you add or change an endpoint, add/update its request here and commit it. See README > \"Postman\".",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "walletId", "value": "" },
+    { "key": "toAccountNumber", "value": "1000000002" },
+    { "key": "userId", "value": "" },
+    { "key": "kycId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:8000/", "protocol": "http", "host": ["localhost"], "port": "8000", "path": [""] }
+          }
+        },
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:8000/health", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"newuser@irate.dev\",\n  \"password\": \"secret123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "  console.log('Saved accessToken');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"ada@irate.dev\",\n  \"password\": \"Password123!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "  pm.collectionVariables.set('adminToken', json.accessToken);",
+                  "  console.log('Saved adminToken');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@irate.dev\",\n  \"password\": \"Admin123!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Refresh access token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "Uses the httpOnly refreshToken cookie set during Login.",
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get my profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Get user by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallets",
+      "item": [
+        {
+          "name": "Create wallet",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/wallets", "host": ["{{baseUrl}}"], "path": ["wallets"] }
+          }
+        },
+        {
+          "name": "List my wallets",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const w = pm.response.json().data.wallets;",
+                  "if (w && w[0]) pm.collectionVariables.set('walletId', w[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": {
+              "raw": "{{baseUrl}}/wallets?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Get wallet balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/wallets/{{walletId}}/balance", "host": ["{{baseUrl}}"], "path": ["wallets", "{{walletId}}", "balance"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Resolve account (name enquiry)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Confirm a recipient's name before sending. Returns { accountNumber, accountName }.",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/transactions/resolve/{{toAccountNumber}}", "host": ["{{baseUrl}}"], "path": ["transactions", "resolve", "{{toAccountNumber}}"] }
+          }
+        },
+        {
+          "name": "Send money (by account number)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}", "description": "Required. Reuse the same value to safely retry without double-spending." }
+            ],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "description": "Sends from the caller's wallet to the recipient's account number. amount is in minor units (kobo).",
+            "body": { "mode": "raw", "raw": "{\n  \"toAccountNumber\": \"{{toAccountNumber}}\",\n  \"amount\": 150000\n}" },
+            "url": { "raw": "{{baseUrl}}/transactions/transfer", "host": ["{{baseUrl}}"], "path": ["transactions", "transfer"] }
+          }
+        },
+        {
+          "name": "My transaction history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": {
+              "raw": "{{baseUrl}}/transactions/me?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "me"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "List wallet transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": {
+              "raw": "{{baseUrl}}/transactions/{{walletId}}/transactions?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "{{walletId}}", "transactions"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "KYC",
+      "item": [
+        {
+          "name": "Submit KYC",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Ada Lovelace\",\n  \"dateOfBirth\": \"1990-12-10\",\n  \"address\": \"12 Marina Road, Lagos\",\n  \"idType\": \"NIN\",\n  \"idNumber\": \"12345678901\",\n  \"documentUrl\": \"https://example.com/id.png\"\n}" },
+            "url": { "raw": "{{baseUrl}}/kyc/submit", "host": ["{{baseUrl}}"], "path": ["kyc", "submit"] }
+          }
+        },
+        {
+          "name": "Get my KYC status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/kyc/status", "host": ["{{baseUrl}}"], "path": ["kyc", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "All routes require an ADMIN access token ({{adminToken}}).",
+      "item": [
+        {
+          "name": "Dashboard overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/admin/dashboard/overview", "host": ["{{baseUrl}}"], "path": ["admin", "dashboard", "overview"] }
+          }
+        },
+        {
+          "name": "Get admin profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/admin/me", "host": ["{{baseUrl}}"], "path": ["admin", "me"] }
+          }
+        },
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/admin/users", "host": ["{{baseUrl}}"], "path": ["admin", "users"] }
+          }
+        },
+        {
+          "name": "User stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/admin/users/stats", "host": ["{{baseUrl}}"], "path": ["admin", "users", "stats"] }
+          }
+        },
+        {
+          "name": "All wallets balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/admin/wallets/balance", "host": ["{{baseUrl}}"], "path": ["admin", "wallets", "balance"] }
+          }
+        },
+        {
+          "name": "Credit wallet (minor units)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 500000,\n  \"reason\": \"Manual top-up\"\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/credit/{{walletId}}", "host": ["{{baseUrl}}"], "path": ["admin", "credit", "{{walletId}}"] }
+          }
+        },
+        {
+          "name": "List KYC submissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "url": {
+              "raw": "{{baseUrl}}/admin/kyc?status=PENDING&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "kyc"],
+              "query": [
+                { "key": "status", "value": "PENDING", "description": "PENDING | VERIFIED | REJECTED (optional)" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Review KYC (approve/reject)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}" }] },
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"APPROVE\"\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/kyc/{{kycId}}/review", "host": ["{{baseUrl}}"], "path": ["admin", "kyc", "{{kycId}}", "review"] }
+          }
+        }
+      ]
+    }
+  ]
+}

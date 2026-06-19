@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
+import { sendResponse } from "@core/utils/response";
 import { KycService } from "./kyc.service";
 
 const kycService = new KycService();
@@ -19,17 +20,17 @@ export class KycController {
       documentUrl,
     });
 
-    res.status(201).json(result);
+    sendResponse(res, 201, true, "KYC submitted successfully", result);
   }
 
-  // ✅ User: Get own KYC status
+  // ✅ User: get own KYC status
   async getMyKyc(req: Request, res: Response) {
     const userId = req.user.id;
     const result = await kycService.getMyKyc(userId);
-    res.json(result);
+    sendResponse(res, 200, true, "KYC retrieved", result);
   }
 
-  // ✅ Admin: List all KYC with pagination and filtering
+  // ✅ Admin: list all KYC with pagination + filtering
   async listKycs(req: Request, res: Response) {
     const { status, page = "1", limit = "10" } = req.query;
 
@@ -39,10 +40,10 @@ export class KycController {
       parseInt(limit as string)
     );
 
-    res.json(result);
+    sendResponse(res, 200, true, "KYC submissions retrieved", result);
   }
 
-  // ✅ Admin: Approve / Reject KYC
+  // ✅ Admin: approve / reject KYC
   async reviewKyc(req: Request, res: Response) {
     const { kycId } = req.params;
     const { action } = req.body;
@@ -52,6 +53,6 @@ export class KycController {
       action === "APPROVE" ? "APPROVE" : "REJECT"
     );
 
-    res.json(result);
+    sendResponse(res, 200, true, `KYC ${action.toLowerCase()}d`, result);
   }
 }

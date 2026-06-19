@@ -1,113 +1,149 @@
 import { prisma } from "@core/config/prisma";
 import { redis } from "@core/config/redis";
 import { AppError } from "@core/errors/AppError";
+import { deriveAccountName } from "@core/utils/account";
 import dayjs from "dayjs";
 
+type RawTransaction = {
+  id: string;
+  type: "CREDIT" | "DEBIT";
+  amount: bigint;
+  walletId: string;
+  createdAt: Date;
+};
+
+const ACCOUNT_NUMBER_RE = /(\d{10})/;
+
+/**
+ * TransactionService owns money movement (transfer, admin credit) and the
+ * system-wide stats used by the admin dashboard.
+ *
+ * `amount` arguments are integer minor units (kobo) as BigInt. See utils/money.ts.
+ */
 export class TransactionService {
+  /**
+   * Send money from the caller's wallet to a recipient identified by their
+   * ACCOUNT NUMBER. amount is in minor units (kobo).
+   */
   async transfer(
-    fromWalletId: string,
-    toWalletId: string,
-    amount: number,
     userId: string,
+    toAccountNumber: string,
+    amount: bigint,
     idempotencyKey?: string
   ) {
-    if (amount <= 0) throw new AppError("Amount must be positive.");
+    if (amount <= 0n) throw new AppError("Amount must be positive.", 400);
 
-    // ✅ Idempotency Required
+    // ✅ Idempotency required so a retried request can't double-spend.
     if (!idempotencyKey) {
       throw new AppError("Idempotency-Key header is required.", 400);
     }
 
     const cacheKey = `idem:${idempotencyKey}`;
-
-    // ✅ If this request was already processed, return stored result
     const cachedResult = await redis.get(cacheKey);
-    if (cachedResult) {
-      return JSON.parse(cachedResult);
-    }
+    if (cachedResult) return JSON.parse(cachedResult);
 
-    // ✅ Perform transfer atomically
+    // ✅ Perform transfer atomically.
     const result = await prisma.$transaction(async (tx) => {
-      const from = await tx.wallet.findUnique({ where: { id: fromWalletId } });
-      const to = await tx.wallet.findUnique({ where: { id: toWalletId } });
+      const from = await tx.wallet.findFirst({ where: { userId } });
+      if (!from) throw new AppError("You don't have a wallet yet.", 404);
 
-      if (!from || !to) throw new AppError("Wallet not found.");
+      const to = await tx.wallet.findUnique({
+        where: { accountNumber: toAccountNumber },
+      });
+      if (!to) throw new AppError("Recipient account not found.", 404);
 
-      // ✅ Ensure user owns wallet they are transferring from
-      if (from.userId !== userId) {
-        throw new AppError(
-          "Unauthorized: You can only transfer from your own wallet.",
-          403
-        );
-      }
+      if (to.id === from.id)
+        throw new AppError("Cannot transfer to your own account.", 400);
 
-      if (from.balance < amount)
-        throw new AppError("Insufficient balance.", 400);
-
-      const balanceBeforeFrom = from.balance;
-      const balanceBeforeTo = to.balance;
-      // Update balances
-      const updatedFrom = await tx.wallet.update({
-        where: { id: fromWalletId },
+      // Race-safe debit: only succeeds if the balance is still sufficient.
+      const debited = await tx.wallet.updateMany({
+        where: { id: from.id, balance: { gte: amount } },
         data: { balance: { decrement: amount } },
       });
+      if (debited.count === 0)
+        throw new AppError("Insufficient balance.", 400);
 
       const updatedTo = await tx.wallet.update({
-        where: { id: toWalletId },
+        where: { id: to.id },
         data: { balance: { increment: amount } },
       });
+      const balanceAfterFrom = from.balance - amount;
 
-      // Create transaction entries
       const debitTx = await tx.transaction.create({
-        data: { walletId: fromWalletId, type: "DEBIT", amount },
+        data: { walletId: from.id, type: "DEBIT", amount },
       });
-
       const creditTx = await tx.transaction.create({
-        data: { walletId: toWalletId, type: "CREDIT", amount },
+        data: { walletId: to.id, type: "CREDIT", amount },
       });
 
-      // Create ledger entries
       await tx.ledger.create({
         data: {
-          walletId: fromWalletId,
+          walletId: from.id,
           referenceId: debitTx.id,
-          description: `Transfer to wallet ${toWalletId}`,
+          description: `Transfer to ${to.accountNumber}`,
           amount,
-          balanceBefore: balanceBeforeFrom,
-          balanceAfter: balanceBeforeFrom - amount,
+          balanceBefore: from.balance,
+          balanceAfter: balanceAfterFrom,
           type: "DEBIT",
         },
       });
-
       await tx.ledger.create({
         data: {
-          walletId: toWalletId,
+          walletId: to.id,
           referenceId: creditTx.id,
-          description: `Transfer from wallet ${fromWalletId}`,
+          description: `Transfer from ${from.accountNumber}`,
           amount,
-          balanceBefore: balanceBeforeTo,
-          balanceAfter: balanceBeforeTo + amount,
+          balanceBefore: updatedTo.balance - amount,
+          balanceAfter: updatedTo.balance,
           type: "CREDIT",
         },
       });
 
-      // Cache wallet balances
-      await redis.set(
-        `wallet:${fromWalletId}:balance`,
-        updatedFrom.balance.toString()
-      );
-      await redis.set(
-        `wallet:${toWalletId}:balance`,
-        updatedTo.balance.toString()
-      );
-
-      return { from: updatedFrom, to: updatedTo };
+      return {
+        reference: debitTx.id,
+        amount,
+        fromWalletId: from.id,
+        toWalletId: to.id,
+        from: { accountNumber: from.accountNumber, balance: balanceAfterFrom },
+        to: { accountNumber: to.accountNumber },
+      };
     });
 
-    // ✅ Store result for 5 minutes to prevent double-transfer
-    await redis.set(cacheKey, JSON.stringify(result), "EX", 60 * 5);
+    // Invalidate cached balances for both wallets + store idempotent result.
+    await Promise.all([
+      redis.del(`wallet:${result.fromWalletId}:balance`),
+      redis.del(`wallet:${result.toWalletId}:balance`),
+      redis.set(cacheKey, JSON.stringify(result), "EX", 60 * 5),
+    ]);
 
     return result;
+  }
+
+  /** The logged-in user's transactions across all their wallets (paginated). */
+  async getMyTransactions(userId: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+
+    const wallets = await prisma.wallet.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    const walletIds = wallets.map((w) => w.id);
+    const where = { walletId: { in: walletIds } };
+
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    return {
+      transactions: await this.enrich(transactions),
+      pagination: this.paginate(total, page, limit),
+    };
   }
 
   async getWalletTransactions(
@@ -118,7 +154,6 @@ export class TransactionService {
   ) {
     const skip = (page - 1) * limit;
 
-    // Ensure wallet belongs to user
     const wallet = await prisma.wallet.findUnique({ where: { id: walletId } });
     if (!wallet) throw new AppError("Wallet not found", 404);
     if (wallet.userId !== userId)
@@ -134,32 +169,95 @@ export class TransactionService {
       prisma.transaction.count({ where: { walletId } }),
     ]);
 
-    const totalPages = Math.ceil(total / limit);
-
     return {
-      transactions,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      transactions: await this.enrich(transactions),
+      pagination: this.paginate(total, page, limit),
     };
   }
 
-  async creditWallet(walletId: string, amount: number, reason: string) {
-    if (amount <= 0) throw new AppError("Amount must be positive");
+  private paginate(total: number, page: number, limit: number) {
+    const totalPages = Math.ceil(total / limit);
+    return {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
 
-    return prisma.$transaction(async (tx) => {
+  /**
+   * Enrich raw transactions with their ledger detail: a human description,
+   * direction, running balance, and the resolved counterparty (account + name).
+   * So a feed can read: "Sent ₦2,500 to Bola (1000000002)".
+   */
+  private async enrich(transactions: RawTransaction[]) {
+    if (transactions.length === 0) return [];
+
+    // 1. Pull the matching ledger entries in one query.
+    const ledgers = await prisma.ledger.findMany({
+      where: { referenceId: { in: transactions.map((t) => t.id) } },
+    });
+    const ledgerByRef = new Map(ledgers.map((l) => [l.referenceId, l]));
+
+    // 2. Resolve every counterparty account number to a name in one query.
+    const counterAccounts = new Set<string>();
+    for (const l of ledgers) {
+      const match = l.description.match(ACCOUNT_NUMBER_RE);
+      if (match) counterAccounts.add(match[1]);
+    }
+    const nameByAccount = new Map<string, string>();
+    if (counterAccounts.size > 0) {
+      const wallets = await prisma.wallet.findMany({
+        where: { accountNumber: { in: [...counterAccounts] } },
+        select: {
+          accountNumber: true,
+          user: { select: { email: true, kyc: { select: { fullName: true } } } },
+        },
+      });
+      for (const w of wallets) {
+        nameByAccount.set(
+          w.accountNumber,
+          deriveAccountName(w.user.email, w.user.kyc?.fullName)
+        );
+      }
+    }
+
+    // 3. Shape each item.
+    return transactions.map((t) => {
+      const ledger = ledgerByRef.get(t.id);
+      const direction = t.type === "CREDIT" ? "in" : "out";
+      const description =
+        ledger?.description ?? (direction === "in" ? "Credit" : "Debit");
+      const acct = ledger?.description.match(ACCOUNT_NUMBER_RE)?.[1] ?? null;
+
+      return {
+        id: t.id,
+        type: t.type,
+        direction, // "in" (received) | "out" (sent)
+        amount: t.amount, // minor units
+        description,
+        counterparty: acct
+          ? { accountNumber: acct, name: nameByAccount.get(acct) ?? null }
+          : null,
+        balanceAfter: ledger?.balanceAfter ?? null, // running balance, minor units
+        createdAt: t.createdAt,
+      };
+    });
+  }
+
+  /** Admin: credit a wallet (e.g. manual top-up / adjustment). */
+  async creditWallet(walletId: string, amount: bigint, reason: string) {
+    if (amount <= 0n) throw new AppError("Amount must be positive", 400);
+
+    const updatedWallet = await prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({ where: { id: walletId } });
       if (!wallet) throw new AppError("Wallet not found", 404);
 
       const balanceBefore = wallet.balance;
 
-      // Update balance
-      const updatedWallet = await tx.wallet.update({
+      const updated = await tx.wallet.update({
         where: { id: walletId },
         data: { balance: { increment: amount } },
       });
@@ -172,7 +270,7 @@ export class TransactionService {
         data: {
           walletId,
           referenceId: transaction.id,
-          description: reason, // <--- store reason here
+          description: reason,
           amount,
           balanceBefore,
           balanceAfter: balanceBefore + amount,
@@ -180,41 +278,35 @@ export class TransactionService {
         },
       });
 
-      // Update cache
-      await redis.set(
-        `wallet:${walletId}:balance`,
-        updatedWallet.balance.toString()
-      );
-
-      return updatedWallet;
+      return updated;
     });
+
+    await redis.set(
+      `wallet:${walletId}:balance`,
+      updatedWallet.balance.toString()
+    );
+
+    return updatedWallet;
   }
-  // System-wide transaction stats for dashboard
+
+  // System-wide transaction count + 24h trend for the dashboard.
   async getAllTransactionsStats() {
     const now = new Date();
-
-    // Today (last 24h)
     const todayStart = dayjs(now).subtract(24, "hour").toDate();
-    const todayEnd = now;
-
-    // Previous 24h (day before)
     const yesterdayStart = dayjs(now).subtract(48, "hour").toDate();
     const yesterdayEnd = dayjs(now).subtract(24, "hour").toDate();
 
-    // Total transactions in system
-    const totalTransactions = await prisma.transaction.count();
+    const [totalTransactions, todayTransactions, yesterdayTransactions] =
+      await Promise.all([
+        prisma.transaction.count(),
+        prisma.transaction.count({
+          where: { createdAt: { gte: todayStart, lte: now } },
+        }),
+        prisma.transaction.count({
+          where: { createdAt: { gte: yesterdayStart, lte: yesterdayEnd } },
+        }),
+      ]);
 
-    // Transactions in last 24h
-    const todayTransactions = await prisma.transaction.count({
-      where: { createdAt: { gte: todayStart, lte: todayEnd } },
-    });
-
-    // Transactions in previous 24h
-    const yesterdayTransactions = await prisma.transaction.count({
-      where: { createdAt: { gte: yesterdayStart, lte: yesterdayEnd } },
-    });
-
-    // Calculate trend (percentage change)
     const trend =
       yesterdayTransactions === 0
         ? 0
@@ -232,79 +324,63 @@ export class TransactionService {
     };
   }
 
-  //  System-wide Transaction Volume (Total money movement)
+  // System-wide transaction volume (money moved) in the last 24h.
   async getTransactionVolume() {
     const now = new Date();
-
-    // Last 24 hours
     const todayStart = dayjs(now).subtract(24, "hour").toDate();
-    const todayEnd = now;
-
-    // Previous 24 hours
     const yesterdayStart = dayjs(now).subtract(48, "hour").toDate();
     const yesterdayEnd = dayjs(now).subtract(24, "hour").toDate();
 
-    // Total volume moved in last 24 hours
-    const todayVolume = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: {
-        createdAt: { gte: todayStart, lte: todayEnd },
-      },
-    });
+    const [todayVolume, yesterdayVolume] = await Promise.all([
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { createdAt: { gte: todayStart, lte: now } },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { createdAt: { gte: yesterdayStart, lte: yesterdayEnd } },
+      }),
+    ]);
 
-    // Total volume moved in previous 24 hours
-    const yesterdayVolume = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: {
-        createdAt: { gte: yesterdayStart, lte: yesterdayEnd },
-      },
-    });
+    const todayValue = todayVolume._sum.amount ?? 0n;
+    const todayNum = Number(todayValue);
+    const yesterdayNum = Number(yesterdayVolume._sum.amount ?? 0n);
 
-    const todayValue = todayVolume._sum.amount || 0;
-    const yesterdayValue = yesterdayVolume._sum.amount || 0;
-
-    // % trend formula
     const trend =
-      yesterdayValue === 0
-        ? 0
-        : ((todayValue - yesterdayValue) / yesterdayValue) * 100;
-
+      yesterdayNum === 0 ? 0 : ((todayNum - yesterdayNum) / yesterdayNum) * 100;
     const trendType = trend > 0 ? "up" : trend < 0 ? "down" : "neutral";
 
     return {
       title: "Transaction Volume",
-      value: todayValue, // ₦ money moved
+      value: todayValue, // minor units moved in last 24h
       currency: "NGN",
       trend: Number(trend.toFixed(1)),
       trendType,
     };
   }
 
-  //  System-wide Cashflow (Total Credits - Total Debits)
+  // System-wide cashflow (total credits - total debits).
   async getTotalCashflow() {
-    const creditSum = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: { type: "CREDIT" },
-    });
+    const [creditSum, debitSum] = await Promise.all([
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { type: "CREDIT" },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { type: "DEBIT" },
+      }),
+    ]);
 
-    const debitSum = await prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: { type: "DEBIT" },
-    });
-
-    const totalCredit = creditSum._sum.amount || 0;
-    const totalDebit = debitSum._sum.amount || 0;
-
-    const netCashflow = totalCredit - totalDebit; // Net system growth
+    const totalCredit = creditSum._sum.amount ?? 0n;
+    const totalDebit = debitSum._sum.amount ?? 0n;
 
     return {
       title: "Total Cashflow",
-      value: netCashflow, // Can be negative or positive
+      value: totalCredit - totalDebit, // minor units, can be negative
       credit: totalCredit,
       debit: totalDebit,
       currency: "NGN",
     };
   }
-
-
 }

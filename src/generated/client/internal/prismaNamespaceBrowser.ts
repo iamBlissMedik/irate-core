@@ -108,6 +108,7 @@ export type KYCScalarFieldEnum = (typeof KYCScalarFieldEnum)[keyof typeof KYCSca
 export const WalletScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  accountNumber: 'accountNumber',
   balance: 'balance',
   createdAt: 'createdAt'
 } as const

@@ -6,6 +6,7 @@ import { AppError } from "@core/errors/AppError";
 import { ValidationError } from "@core/errors/ValidationError";
 import { AuthError } from "@core/errors/AuthError";
 import { config } from "@core/config/env";
+import { generateAccountNumber } from "@core/utils/account";
 
 export class AuthService {
   async register(email: string, password: string) {
@@ -16,11 +17,37 @@ export class AuthService {
     if (existing) throw new AppError("User already exists", 400);
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { email, password: hashed },
-    });
 
-    return { id: user.id, email: user.email };
+    // Create the user AND their wallet (with account number) atomically, so a
+    // new user can immediately receive money. Retry on the rare account-number
+    // collision.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const user = await prisma.user.create({
+          data: {
+            email,
+            password: hashed,
+            wallets: {
+              create: { balance: 0n, accountNumber: generateAccountNumber() },
+            },
+          },
+          include: { wallets: true },
+        });
+
+        return {
+          id: user.id,
+          email: user.email,
+          accountNumber: user.wallets[0]?.accountNumber,
+        };
+      } catch (err: any) {
+        // Unique violation on accountNumber -> retry; on email -> already exists.
+        if (err?.code === "P2002" && err?.meta?.target?.includes?.("accountNumber"))
+          continue;
+        if (err?.code === "P2002") throw new AppError("User already exists", 400);
+        throw err;
+      }
+    }
+    throw new AppError("Could not allocate an account number, try again", 500);
   }
 
   async login(email: string, password: string) {
