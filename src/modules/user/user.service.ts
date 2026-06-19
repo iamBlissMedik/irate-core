@@ -1,4 +1,5 @@
 import { prisma } from "@core/config/prisma";
+import { AppError } from "@core/errors/AppError";
 import dayjs from "dayjs";
 import { UserWhereInput } from "generated/client/models";
 
@@ -113,7 +114,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new Error("User not found");
+      throw new AppError("User not found", 404);
     }
 
     return user;

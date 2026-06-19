@@ -35,22 +35,30 @@ model KYC {
 }
 
 model Wallet {
-  id          String        @id @default(cuid())
-  userId      String
-  balance     Float         @default(0)
-  createdAt   DateTime      @default(now())
-  Ledger      Ledger[]
-  Transaction Transaction[]
-  user        User          @relation(fields: [userId], references: [id])
+  // balance is stored in MINOR UNITS (e.g. kobo / cents). See README "Money".
+  // accountNumber is the 10-digit number users share to receive money.
+  id            String        @id @default(cuid())
+  userId        String
+  accountNumber String        @unique
+  balance       BigInt        @default(0)
+  createdAt     DateTime      @default(now())
+  Ledger        Ledger[]
+  Transaction   Transaction[]
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Transaction {
   id        String          @id @default(cuid())
   walletId  String
   type      TransactionType
-  amount    Float
+  amount    BigInt // minor units
   createdAt DateTime        @default(now())
   wallet    Wallet          @relation(fields: [walletId], references: [id])
+
+  @@index([walletId, createdAt])
+  @@index([type, createdAt])
 }
 
 model Ledger {
@@ -58,12 +66,14 @@ model Ledger {
   walletId      String
   referenceId   String?
   description   String
-  amount        Float
-  balanceBefore Float
-  balanceAfter  Float
+  amount        BigInt // minor units
+  balanceBefore BigInt // minor units
+  balanceAfter  BigInt // minor units
   type          LedgerType
   createdAt     DateTime   @default(now())
   wallet        Wallet     @relation(fields: [walletId], references: [id])
+
+  @@index([walletId, createdAt])
 }
 
 model AuditLog {

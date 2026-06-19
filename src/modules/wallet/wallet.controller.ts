@@ -42,8 +42,7 @@ export class WalletController {
     });
   }
 
-  async getAllWalletsBalance(req: Request, res: Response) {
-    const userId = req.user.id;
+  async getAllWalletsBalance(_req: Request, res: Response) {
     const stats = await walletService.getAllWalletsBalance();
 
     res.status(200).json({ success: true, data: stats });

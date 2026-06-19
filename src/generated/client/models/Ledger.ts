@@ -33,9 +33,9 @@ export type LedgerAvgAggregateOutputType = {
 }
 
 export type LedgerSumAggregateOutputType = {
-  amount: number | null
-  balanceBefore: number | null
-  balanceAfter: number | null
+  amount: bigint | null
+  balanceBefore: bigint | null
+  balanceAfter: bigint | null
 }
 
 export type LedgerMinAggregateOutputType = {
@@ -43,9 +43,9 @@ export type LedgerMinAggregateOutputType = {
   walletId: string | null
   referenceId: string | null
   description: string | null
-  amount: number | null
-  balanceBefore: number | null
-  balanceAfter: number | null
+  amount: bigint | null
+  balanceBefore: bigint | null
+  balanceAfter: bigint | null
   type: $Enums.LedgerType | null
   createdAt: Date | null
 }
@@ -55,9 +55,9 @@ export type LedgerMaxAggregateOutputType = {
   walletId: string | null
   referenceId: string | null
   description: string | null
-  amount: number | null
-  balanceBefore: number | null
-  balanceAfter: number | null
+  amount: bigint | null
+  balanceBefore: bigint | null
+  balanceAfter: bigint | null
   type: $Enums.LedgerType | null
   createdAt: Date | null
 }
@@ -216,9 +216,9 @@ export type LedgerGroupByOutputType = {
   walletId: string
   referenceId: string | null
   description: string
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
+  amount: bigint
+  balanceBefore: bigint
+  balanceAfter: bigint
   type: $Enums.LedgerType
   createdAt: Date
   _count: LedgerCountAggregateOutputType | null
@@ -251,9 +251,9 @@ export type LedgerWhereInput = {
   walletId?: Prisma.StringFilter<"Ledger"> | string
   referenceId?: Prisma.StringNullableFilter<"Ledger"> | string | null
   description?: Prisma.StringFilter<"Ledger"> | string
-  amount?: Prisma.FloatFilter<"Ledger"> | number
-  balanceBefore?: Prisma.FloatFilter<"Ledger"> | number
-  balanceAfter?: Prisma.FloatFilter<"Ledger"> | number
+  amount?: Prisma.BigIntFilter<"Ledger"> | bigint | number
+  balanceBefore?: Prisma.BigIntFilter<"Ledger"> | bigint | number
+  balanceAfter?: Prisma.BigIntFilter<"Ledger"> | bigint | number
   type?: Prisma.EnumLedgerTypeFilter<"Ledger"> | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFilter<"Ledger"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
@@ -280,9 +280,9 @@ export type LedgerWhereUniqueInput = Prisma.AtLeast<{
   walletId?: Prisma.StringFilter<"Ledger"> | string
   referenceId?: Prisma.StringNullableFilter<"Ledger"> | string | null
   description?: Prisma.StringFilter<"Ledger"> | string
-  amount?: Prisma.FloatFilter<"Ledger"> | number
-  balanceBefore?: Prisma.FloatFilter<"Ledger"> | number
-  balanceAfter?: Prisma.FloatFilter<"Ledger"> | number
+  amount?: Prisma.BigIntFilter<"Ledger"> | bigint | number
+  balanceBefore?: Prisma.BigIntFilter<"Ledger"> | bigint | number
+  balanceAfter?: Prisma.BigIntFilter<"Ledger"> | bigint | number
   type?: Prisma.EnumLedgerTypeFilter<"Ledger"> | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFilter<"Ledger"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
@@ -313,9 +313,9 @@ export type LedgerScalarWhereWithAggregatesInput = {
   walletId?: Prisma.StringWithAggregatesFilter<"Ledger"> | string
   referenceId?: Prisma.StringNullableWithAggregatesFilter<"Ledger"> | string | null
   description?: Prisma.StringWithAggregatesFilter<"Ledger"> | string
-  amount?: Prisma.FloatWithAggregatesFilter<"Ledger"> | number
-  balanceBefore?: Prisma.FloatWithAggregatesFilter<"Ledger"> | number
-  balanceAfter?: Prisma.FloatWithAggregatesFilter<"Ledger"> | number
+  amount?: Prisma.BigIntWithAggregatesFilter<"Ledger"> | bigint | number
+  balanceBefore?: Prisma.BigIntWithAggregatesFilter<"Ledger"> | bigint | number
+  balanceAfter?: Prisma.BigIntWithAggregatesFilter<"Ledger"> | bigint | number
   type?: Prisma.EnumLedgerTypeWithAggregatesFilter<"Ledger"> | $Enums.LedgerType
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Ledger"> | Date | string
 }
@@ -324,9 +324,9 @@ export type LedgerCreateInput = {
   id?: string
   referenceId?: string | null
   description: string
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
+  amount: bigint | number
+  balanceBefore: bigint | number
+  balanceAfter: bigint | number
   type: $Enums.LedgerType
   createdAt?: Date | string
   wallet: Prisma.WalletCreateNestedOneWithoutLedgerInput
@@ -337,9 +337,9 @@ export type LedgerUncheckedCreateInput = {
   walletId: string
   referenceId?: string | null
   description: string
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
+  amount: bigint | number
+  balanceBefore: bigint | number
+  balanceAfter: bigint | number
   type: $Enums.LedgerType
   createdAt?: Date | string
 }
@@ -348,9 +348,9 @@ export type LedgerUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceBefore?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceAfter?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceBefore?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceAfter?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   type?: Prisma.EnumLedgerTypeFieldUpdateOperationsInput | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   wallet?: Prisma.WalletUpdateOneRequiredWithoutLedgerNestedInput
@@ -361,9 +361,9 @@ export type LedgerUncheckedUpdateInput = {
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceBefore?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceAfter?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceBefore?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceAfter?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   type?: Prisma.EnumLedgerTypeFieldUpdateOperationsInput | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -373,9 +373,9 @@ export type LedgerCreateManyInput = {
   walletId: string
   referenceId?: string | null
   description: string
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
+  amount: bigint | number
+  balanceBefore: bigint | number
+  balanceAfter: bigint | number
   type: $Enums.LedgerType
   createdAt?: Date | string
 }
@@ -384,9 +384,9 @@ export type LedgerUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceBefore?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceAfter?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceBefore?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceAfter?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   type?: Prisma.EnumLedgerTypeFieldUpdateOperationsInput | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -396,9 +396,9 @@ export type LedgerUncheckedUpdateManyInput = {
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceBefore?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceAfter?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceBefore?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceAfter?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   type?: Prisma.EnumLedgerTypeFieldUpdateOperationsInput | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -511,9 +511,9 @@ export type LedgerCreateWithoutWalletInput = {
   id?: string
   referenceId?: string | null
   description: string
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
+  amount: bigint | number
+  balanceBefore: bigint | number
+  balanceAfter: bigint | number
   type: $Enums.LedgerType
   createdAt?: Date | string
 }
@@ -522,9 +522,9 @@ export type LedgerUncheckedCreateWithoutWalletInput = {
   id?: string
   referenceId?: string | null
   description: string
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
+  amount: bigint | number
+  balanceBefore: bigint | number
+  balanceAfter: bigint | number
   type: $Enums.LedgerType
   createdAt?: Date | string
 }
@@ -563,9 +563,9 @@ export type LedgerScalarWhereInput = {
   walletId?: Prisma.StringFilter<"Ledger"> | string
   referenceId?: Prisma.StringNullableFilter<"Ledger"> | string | null
   description?: Prisma.StringFilter<"Ledger"> | string
-  amount?: Prisma.FloatFilter<"Ledger"> | number
-  balanceBefore?: Prisma.FloatFilter<"Ledger"> | number
-  balanceAfter?: Prisma.FloatFilter<"Ledger"> | number
+  amount?: Prisma.BigIntFilter<"Ledger"> | bigint | number
+  balanceBefore?: Prisma.BigIntFilter<"Ledger"> | bigint | number
+  balanceAfter?: Prisma.BigIntFilter<"Ledger"> | bigint | number
   type?: Prisma.EnumLedgerTypeFilter<"Ledger"> | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFilter<"Ledger"> | Date | string
 }
@@ -574,9 +574,9 @@ export type LedgerCreateManyWalletInput = {
   id?: string
   referenceId?: string | null
   description: string
-  amount: number
-  balanceBefore: number
-  balanceAfter: number
+  amount: bigint | number
+  balanceBefore: bigint | number
+  balanceAfter: bigint | number
   type: $Enums.LedgerType
   createdAt?: Date | string
 }
@@ -585,9 +585,9 @@ export type LedgerUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceBefore?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceAfter?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceBefore?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceAfter?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   type?: Prisma.EnumLedgerTypeFieldUpdateOperationsInput | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -596,9 +596,9 @@ export type LedgerUncheckedUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceBefore?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceAfter?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceBefore?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceAfter?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   type?: Prisma.EnumLedgerTypeFieldUpdateOperationsInput | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -607,9 +607,9 @@ export type LedgerUncheckedUpdateManyWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.StringFieldUpdateOperationsInput | string
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceBefore?: Prisma.FloatFieldUpdateOperationsInput | number
-  balanceAfter?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceBefore?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  balanceAfter?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   type?: Prisma.EnumLedgerTypeFieldUpdateOperationsInput | $Enums.LedgerType
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -688,9 +688,9 @@ export type $LedgerPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     walletId: string
     referenceId: string | null
     description: string
-    amount: number
-    balanceBefore: number
-    balanceAfter: number
+    amount: bigint
+    balanceBefore: bigint
+    balanceAfter: bigint
     type: $Enums.LedgerType
     createdAt: Date
   }, ExtArgs["result"]["ledger"]>
@@ -1121,9 +1121,9 @@ export interface LedgerFieldRefs {
   readonly walletId: Prisma.FieldRef<"Ledger", 'String'>
   readonly referenceId: Prisma.FieldRef<"Ledger", 'String'>
   readonly description: Prisma.FieldRef<"Ledger", 'String'>
-  readonly amount: Prisma.FieldRef<"Ledger", 'Float'>
-  readonly balanceBefore: Prisma.FieldRef<"Ledger", 'Float'>
-  readonly balanceAfter: Prisma.FieldRef<"Ledger", 'Float'>
+  readonly amount: Prisma.FieldRef<"Ledger", 'BigInt'>
+  readonly balanceBefore: Prisma.FieldRef<"Ledger", 'BigInt'>
+  readonly balanceAfter: Prisma.FieldRef<"Ledger", 'BigInt'>
   readonly type: Prisma.FieldRef<"Ledger", 'LedgerType'>
   readonly createdAt: Prisma.FieldRef<"Ledger", 'DateTime'>
 }

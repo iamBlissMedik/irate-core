@@ -15,6 +15,11 @@ export class UserController {
     const userId = req.params.userId || req.user?.id;
     if (!userId) throw new AppError("Unauthorized", 401);
 
+    // 🔒 A user may only view their own profile; admins may view anyone.
+    if (userId !== req.user.id && req.user.role !== "ADMIN") {
+      throw new AppError("Forbidden: you can only view your own profile", 403);
+    }
+
     // Pagination query params (optional)
     const walletPage = parseInt(req.query.walletPage as string) || 1;
     const walletLimit = parseInt(req.query.walletLimit as string) || 10;

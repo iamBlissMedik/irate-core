@@ -31,14 +31,14 @@ export type TransactionAvgAggregateOutputType = {
 }
 
 export type TransactionSumAggregateOutputType = {
-  amount: number | null
+  amount: bigint | null
 }
 
 export type TransactionMinAggregateOutputType = {
   id: string | null
   walletId: string | null
   type: $Enums.TransactionType | null
-  amount: number | null
+  amount: bigint | null
   createdAt: Date | null
 }
 
@@ -46,7 +46,7 @@ export type TransactionMaxAggregateOutputType = {
   id: string | null
   walletId: string | null
   type: $Enums.TransactionType | null
-  amount: number | null
+  amount: bigint | null
   createdAt: Date | null
 }
 
@@ -183,7 +183,7 @@ export type TransactionGroupByOutputType = {
   id: string
   walletId: string
   type: $Enums.TransactionType
-  amount: number
+  amount: bigint
   createdAt: Date
   _count: TransactionCountAggregateOutputType | null
   _avg: TransactionAvgAggregateOutputType | null
@@ -214,7 +214,7 @@ export type TransactionWhereInput = {
   id?: Prisma.StringFilter<"Transaction"> | string
   walletId?: Prisma.StringFilter<"Transaction"> | string
   type?: Prisma.EnumTransactionTypeFilter<"Transaction"> | $Enums.TransactionType
-  amount?: Prisma.FloatFilter<"Transaction"> | number
+  amount?: Prisma.BigIntFilter<"Transaction"> | bigint | number
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
 }
@@ -235,7 +235,7 @@ export type TransactionWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.TransactionWhereInput | Prisma.TransactionWhereInput[]
   walletId?: Prisma.StringFilter<"Transaction"> | string
   type?: Prisma.EnumTransactionTypeFilter<"Transaction"> | $Enums.TransactionType
-  amount?: Prisma.FloatFilter<"Transaction"> | number
+  amount?: Prisma.BigIntFilter<"Transaction"> | bigint | number
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
 }, "id">
@@ -260,14 +260,14 @@ export type TransactionScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   walletId?: Prisma.StringWithAggregatesFilter<"Transaction"> | string
   type?: Prisma.EnumTransactionTypeWithAggregatesFilter<"Transaction"> | $Enums.TransactionType
-  amount?: Prisma.FloatWithAggregatesFilter<"Transaction"> | number
+  amount?: Prisma.BigIntWithAggregatesFilter<"Transaction"> | bigint | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Transaction"> | Date | string
 }
 
 export type TransactionCreateInput = {
   id?: string
   type: $Enums.TransactionType
-  amount: number
+  amount: bigint | number
   createdAt?: Date | string
   wallet: Prisma.WalletCreateNestedOneWithoutTransactionInput
 }
@@ -276,14 +276,14 @@ export type TransactionUncheckedCreateInput = {
   id?: string
   walletId: string
   type: $Enums.TransactionType
-  amount: number
+  amount: bigint | number
   createdAt?: Date | string
 }
 
 export type TransactionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   wallet?: Prisma.WalletUpdateOneRequiredWithoutTransactionNestedInput
 }
@@ -292,7 +292,7 @@ export type TransactionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -300,14 +300,14 @@ export type TransactionCreateManyInput = {
   id?: string
   walletId: string
   type: $Enums.TransactionType
-  amount: number
+  amount: bigint | number
   createdAt?: Date | string
 }
 
 export type TransactionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -315,7 +315,7 @@ export type TransactionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -410,14 +410,14 @@ export type EnumTransactionTypeFieldUpdateOperationsInput = {
 export type TransactionCreateWithoutWalletInput = {
   id?: string
   type: $Enums.TransactionType
-  amount: number
+  amount: bigint | number
   createdAt?: Date | string
 }
 
 export type TransactionUncheckedCreateWithoutWalletInput = {
   id?: string
   type: $Enums.TransactionType
-  amount: number
+  amount: bigint | number
   createdAt?: Date | string
 }
 
@@ -454,35 +454,35 @@ export type TransactionScalarWhereInput = {
   id?: Prisma.StringFilter<"Transaction"> | string
   walletId?: Prisma.StringFilter<"Transaction"> | string
   type?: Prisma.EnumTransactionTypeFilter<"Transaction"> | $Enums.TransactionType
-  amount?: Prisma.FloatFilter<"Transaction"> | number
+  amount?: Prisma.BigIntFilter<"Transaction"> | bigint | number
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
 }
 
 export type TransactionCreateManyWalletInput = {
   id?: string
   type: $Enums.TransactionType
-  amount: number
+  amount: bigint | number
   createdAt?: Date | string
 }
 
 export type TransactionUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type TransactionUncheckedUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type TransactionUncheckedUpdateManyWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
-  amount?: Prisma.FloatFieldUpdateOperationsInput | number
+  amount?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -543,7 +543,7 @@ export type $TransactionPayload<ExtArgs extends runtime.Types.Extensions.Interna
     id: string
     walletId: string
     type: $Enums.TransactionType
-    amount: number
+    amount: bigint
     createdAt: Date
   }, ExtArgs["result"]["transaction"]>
   composites: {}
@@ -972,7 +972,7 @@ export interface TransactionFieldRefs {
   readonly id: Prisma.FieldRef<"Transaction", 'String'>
   readonly walletId: Prisma.FieldRef<"Transaction", 'String'>
   readonly type: Prisma.FieldRef<"Transaction", 'TransactionType'>
-  readonly amount: Prisma.FieldRef<"Transaction", 'Float'>
+  readonly amount: Prisma.FieldRef<"Transaction", 'BigInt'>
   readonly createdAt: Prisma.FieldRef<"Transaction", 'DateTime'>
 }
     
