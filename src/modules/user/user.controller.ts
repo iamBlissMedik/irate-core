@@ -40,4 +40,10 @@ export class UserController {
     const stats = await userService.getAllUsersStats();
     sendResponse(res, 200, true, "User stats fetched successfully", stats);
   }
+
+  // ✅ The logged-in user's dashboard/home overview.
+  async getMyOverview(req: Request, res: Response) {
+    const overview = await userService.getMyOverview(req.user.id);
+    sendResponse(res, 200, true, "Overview fetched successfully", overview);
+  }
 }

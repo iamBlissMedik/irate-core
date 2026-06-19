@@ -204,6 +204,7 @@ Base path: `/api/v1`. All responses use `{ success, message, data }`.
 
 | Method | Path             | Auth | Description                |
 | ------ | ---------------- | ---- | -------------------------- |
+| GET    | `/users/me/overview` | 🔒 | Dashboard/home: account no., balance, KYC, stats, recent activity |
 | GET    | `/users/me`      | 🔒   | Current user + wallets/KYC      |
 | GET    | `/users/:userId` | 🔒   | User by id (self only, or ADMIN) |
 

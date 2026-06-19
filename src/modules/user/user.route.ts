@@ -6,6 +6,7 @@ import asyncHandler from "express-async-handler";
 const router = Router();
 const userController = new UserController();
 
+router.get("/me/overview", authenticate, asyncHandler(userController.getMyOverview));
 router.get("/me", authenticate, asyncHandler(userController.getUser));
 router.get("/:userId", authenticate, asyncHandler(userController.getUser));
 

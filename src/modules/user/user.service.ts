@@ -1,9 +1,54 @@
 import { prisma } from "@core/config/prisma";
 import { AppError } from "@core/errors/AppError";
+import { TransactionService } from "@modules/transaction/transaction.service";
 import dayjs from "dayjs";
 import { UserWhereInput } from "generated/client/models";
 
+const transactionService = new TransactionService();
+
 export class UserService {
+  /**
+   * A user's "home screen" overview: account number, balance, KYC status,
+   * quick in/out stats, and their most recent transactions (enriched).
+   */
+  async getMyOverview(userId: string) {
+    const wallet = await prisma.wallet.findFirst({
+      where: { userId },
+      select: { id: true, accountNumber: true, balance: true },
+    });
+    if (!wallet) throw new AppError("Wallet not found", 404);
+
+    const [kyc, credit, debit, count, recent] = await Promise.all([
+      prisma.kYC.findUnique({
+        where: { userId },
+        select: { status: true },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { walletId: wallet.id, type: "CREDIT" },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { walletId: wallet.id, type: "DEBIT" },
+      }),
+      prisma.transaction.count({ where: { walletId: wallet.id } }),
+      transactionService.getMyTransactions(userId, 1, 5),
+    ]);
+
+    return {
+      accountNumber: wallet.accountNumber,
+      balance: wallet.balance, // minor units
+      currency: "NGN",
+      kycStatus: kyc?.status ?? null,
+      stats: {
+        totalIn: credit._sum.amount ?? 0n, // lifetime received
+        totalOut: debit._sum.amount ?? 0n, // lifetime sent
+        transactionCount: count,
+      },
+      recentTransactions: recent.transactions,
+    };
+  }
+
   /**
    * ✅ Get all users with pagination and optional search by email.
    */

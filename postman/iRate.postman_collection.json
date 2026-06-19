@@ -119,6 +119,16 @@
       "name": "Users",
       "item": [
         {
+          "name": "My overview (dashboard/home)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Account number, balance, KYC status, lifetime in/out stats, and recent activity.",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}" }] },
+            "url": { "raw": "{{baseUrl}}/users/me/overview", "host": ["{{baseUrl}}"], "path": ["users", "me", "overview"] }
+          }
+        },
+        {
           "name": "Get my profile",
           "request": {
             "method": "GET",
