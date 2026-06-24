@@ -92,6 +92,28 @@ Two roles via the `UserRole` enum: `USER` and `ADMIN`.
 - A user may only read **their own** profile via `/users/:userId`; only ADMINs
   can read other users (prevents IDOR / data leakage).
 
+### What each role can do
+
+**USER** — manage their own money:
+
+- Register (auto-gets a wallet + account number), log in / refresh / log out
+- Home dashboard: balance, account number, KYC status, lifetime in/out stats,
+  recent activity (`GET /users/me/overview`)
+- Name enquiry + **send money** to another account number
+- View their wallet balance and transaction history
+- Submit KYC and check its status
+
+A USER **cannot** see anyone else's data, credit wallets, review KYC, or access
+system stats.
+
+**ADMIN** — everything a USER can, plus operate the platform:
+
+- System dashboard: users, total balance, transaction count, volume, cashflow
+  (`GET /admin/dashboard/overview`)
+- List users + user stats, view any user's profile, system wallet balance
+- **Credit a wallet** (manual top-up — the only way money enters the system)
+- List KYC submissions and **approve / reject** them
+
 ## Accounts & sending money
 
 Every user gets a **wallet with a unique 10-digit account number** automatically
